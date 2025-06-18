@@ -92,7 +92,7 @@
     "watch": "webpack --watch",
     "package": "webpack --mode production",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./test/runTest.js"
   },
   "devDependencies": {
     "@types/node": "^16.11.7",
