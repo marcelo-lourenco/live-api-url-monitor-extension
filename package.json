@@ -12,58 +12,33 @@
   "activationEvents": [
     "onView:urlMonitor.list",
     "onCommand:urlMonitor.addItem",
+    "onCommand:urlMonitor.editItem",
     "onCommand:urlMonitor.refreshList"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-        {
-            "command": "urlMonitor.addItem",
-            "title": "Add URL Item",
-            "icon": "$(add)"
-        },
-        {
-            "command": "urlMonitor.editItem",
-            "title": "Edit URL Item",
-            "icon": "$(edit)"
-        },
-        {
-            "command": "urlMonitor.deleteItem",
-            "title": "Delete URL Item",
-            "icon": "$(trash)"
-        },
-        {
-            "command": "urlMonitor.refreshList",
-            "title": "Refresh List",
-            "icon": "$(refresh)"
-        }
+      {
+        "command": "urlMonitor.addItem",
+        "title": "Add URL Item",
+        "icon": "$(add)"
+      },
+      {
+        "command": "urlMonitor.editItem",
+        "title": "Edit URL Item",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "urlMonitor.deleteItem",
+        "title": "Delete URL Item",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "urlMonitor.refreshList",
+        "title": "Refresh List",
+        "icon": "$(refresh)"
+      }
     ],
-    "menus": {
-        "view/title": [
-            {
-                "command": "urlMonitor.addItem",
-                "when": "view == urlMonitor.list",
-                "group": "navigation"
-            },
-            {
-                "command": "urlMonitor.refreshList",
-                "when": "view == urlMonitor.list",
-                "group": "navigation"
-            }
-        ],
-        "view/item/context": [
-            {
-                "command": "urlMonitor.editItem",
-                "when": "view == urlMonitor.list && viewItem == urlItem",
-                "group": "inline"
-            },
-            {
-                "command": "urlMonitor.deleteItem",
-                "when": "view == urlMonitor.list && viewItem == urlItem",
-                "group": "inline"
-            }
-        ]
-    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -77,16 +52,39 @@
       "url-monitor": [
         {
           "id": "urlMonitor.list",
-          "name": "URL Monitor"
+          "name": "URL Monitor",
+          "contextualTitle": "URL Monitor"
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "urlMonitor.list",
-        "contents": "No URLs configured. [Add URL Item](command:urlMonitor.addItem)"
-      }
-    ]
+    "menus": {
+      "view/title": [
+        {
+          "command": "urlMonitor.addItem",
+          "when": "view == urlMonitor.list",
+          "group": "navigation",
+          "icon": "$(add)"
+        },
+        {
+          "command": "urlMonitor.refreshList",
+          "when": "view == urlMonitor.list",
+          "group": "navigation",
+          "icon": "$(refresh)"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "urlMonitor.editItem",
+          "when": "view == urlMonitor.list && viewItem == urlItem",
+          "group": "inline"
+        },
+        {
+          "command": "urlMonitor.deleteItem",
+          "when": "view == urlMonitor.list && viewItem == urlItem",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -97,22 +95,21 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^16.18.126",
-    "@types/uuid": "^10.0.0",
+    "@types/node": "^16.11.7",
     "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
     "eslint": "^8.13.0",
-    "glob": "^11.0.3",
-    "mocha": "^11.7.0",
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.2",
     "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0"
+    "webpack-cli": "^4.10.0",
+    "@types/uuid": "^8.3.4",
+    "@types/mocha": "^9.1.1",
+    "@types/glob": "^7.2.0"
   },
   "dependencies": {
-    "axios": "^1.3.4"
+    "axios": "^1.3.4",
+    "uuid": "^8.3.2"
   }
 }

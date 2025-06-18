@@ -19,8 +19,11 @@ export class ListView {
             showCollapseAll: true
         });
 
-        context.subscriptions.push(
-            this.treeView,
+        this.registerCommands();
+    }
+
+    private registerCommands() {
+        this.context.subscriptions.push(
             vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem()),
             vscode.commands.registerCommand('urlMonitor.editItem', (item) => this.editItem(item)),
             vscode.commands.registerCommand('urlMonitor.deleteItem', (item) => this.deleteItem(item)),
@@ -29,18 +32,28 @@ export class ListView {
     }
 
     public async addItem() {
-        const newItem = await this.addEditView.showAddForm();
-        if (newItem) {
-            await this.storageService.addItem(newItem);
-            this.refresh();
+        try {
+            const newItem = await this.addEditView.showAddForm();
+            if (newItem) {
+                await this.storageService.addItem(newItem);
+                this.refresh();
+                vscode.window.showInformationMessage(`"${newItem.name}" added successfully`);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to add item: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
     public async editItem(item: UrlItem) {
-        const updatedItem = await this.addEditView.showEditForm(item);
-        if (updatedItem) {
-            await this.storageService.updateItem(updatedItem);
-            this.refresh();
+        try {
+            const updatedItem = await this.addEditView.showEditForm(item);
+            if (updatedItem) {
+                await this.storageService.updateItem(updatedItem);
+                this.refresh();
+                vscode.window.showInformationMessage(`"${updatedItem.name}" updated successfully`);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to update item: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -52,8 +65,13 @@ export class ListView {
         );
         
         if (confirm === 'Delete') {
-            await this.storageService.deleteItem(item.id);
-            this.refresh();
+            try {
+                await this.storageService.deleteItem(item.id);
+                this.refresh();
+                vscode.window.showInformationMessage(`"${item.name}" deleted successfully`);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to delete item: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
     }
 

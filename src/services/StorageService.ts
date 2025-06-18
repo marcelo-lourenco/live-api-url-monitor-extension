@@ -5,7 +5,7 @@ import { UrlItem } from '../models/UrlItem';
 export class StorageService {
     private readonly storageKey = 'urlMonitorItems';
 
-    constructor(private globalState: vscode.Memento) {}
+    constructor(private globalState: vscode.Memento) { }
 
     async getItems(): Promise<UrlItem[]> {
         return this.globalState.get<UrlItem[]>(this.storageKey, []);

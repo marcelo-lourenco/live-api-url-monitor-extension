@@ -5,23 +5,29 @@ import { ListView } from './views/ListView';
 import { AddEditView } from './views/AddEditView';
 
 export function activate(context: vscode.ExtensionContext) {
+    // Initialize services
     const storageService = new StorageService(context.globalState);
     const monitorService = new MonitorService(storageService);
     const addEditView = new AddEditView(context);
     const listView = new ListView(context, storageService, addEditView);
 
-    // Configura o handler de mensagens da webview
+    // Register webview panel serializer
     context.subscriptions.push(
         vscode.window.registerWebviewPanelSerializer('urlMonitor.addEdit', {
             async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel) {
-                // Recria a webview se o VS Code for reiniciado
                 addEditView.restoreWebview(webviewPanel);
             }
         })
     );
 
+    // Start monitoring
     monitorService.startMonitoring();
     listView.refresh();
+
+    // Setup status change notification
+    monitorService.onStatusChange((hasErrors: boolean) => {
+        vscode.commands.executeCommand('setContext', 'urlMonitor.hasErrors', hasErrors);
+    });
 }
 
 export function deactivate() {}
