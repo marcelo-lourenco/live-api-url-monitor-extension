@@ -6,18 +6,26 @@ import { UrlTreeDataProvider } from './UrlTreeDataProvider';
 
 export class ListView {
     private treeView: vscode.TreeView<UrlItem>;
+    private treeDataProvider: UrlTreeDataProvider;
 
     constructor(
         private context: vscode.ExtensionContext,
         private storageService: StorageService,
         private addEditView: AddEditView
     ) {
+        this.treeDataProvider = new UrlTreeDataProvider(storageService);
         this.treeView = vscode.window.createTreeView('urlMonitor.list', {
-            treeDataProvider: new UrlTreeDataProvider(storageService),
+            treeDataProvider: this.treeDataProvider,
             showCollapseAll: true
         });
 
-        context.subscriptions.push(this.treeView);
+        context.subscriptions.push(
+            this.treeView,
+            vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem()),
+            vscode.commands.registerCommand('urlMonitor.editItem', (item) => this.editItem(item)),
+            vscode.commands.registerCommand('urlMonitor.deleteItem', (item) => this.deleteItem(item)),
+            vscode.commands.registerCommand('urlMonitor.refreshList', () => this.refresh())
+        );
     }
 
     public async addItem() {
@@ -50,6 +58,6 @@ export class ListView {
     }
 
     public refresh() {
-        vscode.commands.executeCommand('urlMonitor.list.refresh');
+        this.treeDataProvider.refresh();
     }
 }

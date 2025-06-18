@@ -17,15 +17,53 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "urlMonitor.addItem",
-        "title": "Add URL Item"
-      },
-      {
-        "command": "urlMonitor.refreshList",
-        "title": "Refresh URL List"
-      }
+        {
+            "command": "urlMonitor.addItem",
+            "title": "Add URL Item",
+            "icon": "$(add)"
+        },
+        {
+            "command": "urlMonitor.editItem",
+            "title": "Edit URL Item",
+            "icon": "$(edit)"
+        },
+        {
+            "command": "urlMonitor.deleteItem",
+            "title": "Delete URL Item",
+            "icon": "$(trash)"
+        },
+        {
+            "command": "urlMonitor.refreshList",
+            "title": "Refresh List",
+            "icon": "$(refresh)"
+        }
     ],
+    "menus": {
+        "view/title": [
+            {
+                "command": "urlMonitor.addItem",
+                "when": "view == urlMonitor.list",
+                "group": "navigation"
+            },
+            {
+                "command": "urlMonitor.refreshList",
+                "when": "view == urlMonitor.list",
+                "group": "navigation"
+            }
+        ],
+        "view/item/context": [
+            {
+                "command": "urlMonitor.editItem",
+                "when": "view == urlMonitor.list && viewItem == urlItem",
+                "group": "inline"
+            },
+            {
+                "command": "urlMonitor.deleteItem",
+                "when": "view == urlMonitor.list && viewItem == urlItem",
+                "group": "inline"
+            }
+        ]
+    },
     "viewsContainers": {
       "activitybar": [
         {

@@ -21,11 +21,15 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<UrlItem> {
             element.lastStatus === 'up' ? 'pass' : 'error',
             new vscode.ThemeColor(element.lastStatus === 'up' ? 'testing.iconPassed' : 'testing.iconFailed')
         );
+        
+        // Adiciona ações de contexto
+        treeItem.contextValue = 'urlItem';
         treeItem.command = {
             command: 'urlMonitor.editItem',
             title: 'Edit URL',
             arguments: [element]
         };
+        
         return treeItem;
     }
 
