@@ -1,13 +1,27 @@
 {
-  "name": "url-monitor-extension",
-  "displayName": "URL Monitor",
-  "description": "Monitor API endpoints and URLs directly from VS Code.",
+  "name": "live-api-url-monitor",
+  "displayName": "Live URL & API Monitor",
+  "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
   "version": "1.0.0",
   "engines": {
     "vscode": "^1.75.0"
   },
   "categories": [
+    "Testing",
     "Other"
+  ],
+  "keywords": [
+    "url",
+    "api",
+    "monitor",
+    "live",
+    "status",
+    "health",
+    "check",
+    "http",
+    "https",
+    "endpoint",
+    "developer tool"
   ],
   "activationEvents": [
     "onView:urlMonitor.list",

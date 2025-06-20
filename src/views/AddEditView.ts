@@ -1,28 +1,32 @@
 import * as vscode from 'vscode';
-import { UrlItem, createDefaultUrlItem } from '../models/UrlItem'; // Importado createDefaultUrlItem
+import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
 
 export class AddEditView {
     private panel: vscode.WebviewPanel | undefined;
     private resolvePromise: ((value: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined) => void) | undefined;
     private currentItemForForm: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined;
 
-
     constructor(private context: vscode.ExtensionContext) { }
 
     public async showAddForm(): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
         this.currentItemForForm = createDefaultUrlItem();
+        // Default interval for a new item is 60 seconds.
+        // The form will display this as 60 and 'seconds' selected.
+        this.currentItemForForm.interval = 60;
         return this.showForm('Add URL Item', this.currentItemForForm);
     }
 
     public async showEditForm(item: UrlItem): Promise<UrlItem | undefined> {
         this.currentItemForForm = { ...item }; // Clonar para evitar mutação direta
+        // The form will derive displayIntervalValue and displayIntervalUnit from item.interval
         return this.showForm('Edit URL Item', this.currentItemForForm);
     }
 
     private async showForm(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): Promise<any> {
         return new Promise((resolve) => {
             this.resolvePromise = resolve;
-            this.createOrShowPanel(title, itemData);
+            // Pass itemData to ensure the correct data is used for the form
+            this.createOrShowPanel(title, itemData || this.currentItemForForm);
         });
     }
 
@@ -37,12 +41,12 @@ export class AddEditView {
             this.panel.reveal(column);
         } else {
             this.panel = vscode.window.createWebviewPanel(
-                'urlMonitor.addEdit', // Identificador do tipo de webview
-                title, // Título exibido na aba
-                column || vscode.ViewColumn.One, // Coluna para exibir
+                'urlMonitor.addEdit',
+                title,
+                column || vscode.ViewColumn.One,
                 {
-                    enableScripts: true, // Habilita JavaScript no webview
-                    retainContextWhenHidden: true, // Mantém o estado do webview quando não visível
+                    enableScripts: true,
+                    retainContextWhenHidden: true,
                     localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
                 }
             );
@@ -53,7 +57,7 @@ export class AddEditView {
                 this.panel = undefined;
                 this.currentItemForForm = undefined;
                 if (this.resolvePromise) {
-                    this.resolvePromise(undefined); // Resolve com undefined se o painel for fechado
+                    this.resolvePromise(undefined);
                     this.resolvePromise = undefined;
                 }
             }, null, this.context.subscriptions);
@@ -71,13 +75,46 @@ export class AddEditView {
             case 'save':
                 if (this.resolvePromise) {
                     const dataToSave = message.data;
-                    if (this.currentItemForForm && 'id' in this.currentItemForForm) {
-                        dataToSave.id = (this.currentItemForForm as UrlItem).id; // Garante que o ID seja mantido na edição
+                    const rawIntervalInput = parseInt(dataToSave.intervalValue);
+
+                    // Basic validation (already done in webview, but good for robustness)
+                    if (isNaN(rawIntervalInput) || rawIntervalInput < 1) {
+                        // vscode.window.showErrorMessage('Interval must be a positive number (at least 1).');
+                        // Panel remains open due to webview validation.
+                        return;
                     }
-                    this.resolvePromise(dataToSave);
+
+                    let intervalInSeconds = rawIntervalInput;
+                    if (dataToSave.intervalUnit === 'minutes') {
+                        intervalInSeconds = rawIntervalInput * 60;
+                    }
+
+                    const MIN_INTERVAL_SECONDS = 5; // Define your minimum interval in seconds
+                    if (intervalInSeconds < MIN_INTERVAL_SECONDS) {
+                        // vscode.window.showErrorMessage(`Check interval is too short. Minimum is ${MIN_INTERVAL_SECONDS} seconds. You tried to set ${rawIntervalInput} ${dataToSave.intervalUnit} (${intervalInSeconds}s).`);
+                        // Panel remains open due to webview validation.
+                        return;
+                    }
+                    
+                    const finalData: any = {
+                        name: dataToSave.name,
+                        url: dataToSave.url,
+                        method: dataToSave.method,
+                        interval: intervalInSeconds, // Final interval in seconds
+                        expectedStatusCode: dataToSave.expectedStatusCode,
+                        headers: dataToSave.headers,
+                        username: dataToSave.username,
+                        password: dataToSave.password,
+                    };
+
+                    if (this.currentItemForForm && 'id' in this.currentItemForForm) {
+                        finalData.id = (this.currentItemForForm as UrlItem).id;
+                    }
+
+                    this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
                     this.resolvePromise = undefined;
+                    this.panel?.dispose(); // Dispose panel on successful save
                 }
-                this.panel?.dispose();
                 break;
             case 'cancel':
                 if (this.resolvePromise) {
@@ -86,23 +123,46 @@ export class AddEditView {
                 }
                 this.panel?.dispose();
                 break;
-            // Os cases 'addItem' e 'refreshList' foram removidos daqui
+            case 'showError': // This message comes from the webview for its own validation
+                vscode.window.showErrorMessage(message.message);
+                break;
+            default:
+                vscode.window.showWarningMessage(`Received unknown message from webview: ${JSON.stringify(message)}`);
+                break;
         }
     }
 
     private getFormHtml(item?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): string {
         const itemToRender = item || createDefaultUrlItem();
         const isEditMode = item && 'id' in item;
-
-        // Adicionar nonces para Content Security Policy
         const nonce = getNonce();
+
+        let displayIntervalValue: number;
+        let displayIntervalUnit: 'seconds' | 'minutes';
+
+        const currentIntervalInSeconds = itemToRender.interval || 60; // Stored or default (60s for new)
+
+        if (!isEditMode) { // Add mode
+            // For a new item, default display is 60 seconds.
+            // this.currentItemForForm.interval is already 60 from showAddForm.
+            displayIntervalValue = currentIntervalInSeconds; // Should be 60
+            displayIntervalUnit = 'seconds';
+        } else { // Edit mode
+            // If interval is a clean multiple of 60, display in minutes
+            if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
+                displayIntervalValue = currentIntervalInSeconds / 60;
+                displayIntervalUnit = 'minutes';
+            } else {
+                displayIntervalValue = currentIntervalInSeconds;
+                displayIntervalUnit = 'seconds';
+            }
+        }
 
         return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <!-- Content Security Policy -->
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel?.webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${isEditMode ? 'Edit' : 'Add'} URL Item</title>
@@ -129,13 +189,15 @@ export class AddEditView {
                 .form-container {
                     padding: 15px;
                     overflow-y: auto;
-                    height: calc(100vh - 60px); /* Ajustar altura considerando o header */
+                    height: calc(100vh - 60px - 70px); /* Adjusted for header and buttons */
+                    box-sizing: border-box;
                 }
                 .form-group { margin-bottom: 15px; }
                 label { display: block; margin-bottom: 5px; font-weight: bold; }
                 input[type="text"],
                 input[type="url"],
                 input[type="number"],
+                input[type="password"],
                 select,
                 textarea {
                     width: 100%;
@@ -151,8 +213,7 @@ export class AddEditView {
                     border-color: var(--vscode-focusBorder);
                 }
                 .buttons {
-                    margin-top: 20px;
-                    padding-top: 15px;
+                    padding: 15px;
                     border-top: 1px solid var(--vscode-editorGroup-border);
                     display: flex;
                     justify-content: flex-end;
@@ -160,8 +221,10 @@ export class AddEditView {
                     position: sticky;
                     bottom: 0;
                     background-color: var(--vscode-editor-background);
-                    padding-bottom: 15px;
-                    padding-right: 15px;
+                    z-index: 10;
+                    height: 70px; /* Fixed height for button area */
+                    box-sizing: border-box;
+                    align-items: center;
                 }
                 button {
                     padding: 8px 15px;
@@ -185,6 +248,33 @@ export class AddEditView {
                 .form-row { display: flex; gap: 15px; }
                 .form-row .form-group { flex: 1; }
                 textarea { min-height: 80px; resize: vertical; }
+                .interval-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .interval-group input[type="number"] {
+                    flex-grow: 1;
+                    width: auto; 
+                }
+                .interval-unit-display {
+                    white-space: nowrap;
+                    padding-left: 5px;
+                }
+                .radio-group {
+                    display: flex;
+                    gap: 15px; 
+                    margin-top: 8px;
+                    align-items: center;
+                }
+                .radio-group label {
+                    font-weight: normal; 
+                    margin-bottom: 0; 
+                }
+                .radio-group input[type="radio"] {
+                    width: auto; 
+                    margin-right: 5px;
+                }
             </style>
         </head>
         <body>
@@ -194,12 +284,12 @@ export class AddEditView {
 
             <div class="form-container">
                 <div class="form-group">
-                    <label for="name">Item Name*</label>
+                    <label for="name">Item Name *</label>
                     <input type="text" id="name" value="${itemToRender.name || ''}" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="url">URL*</label>
+                    <label for="url">URL *</label>
                     <input type="url" id="url" value="${itemToRender.url || ''}" required placeholder="https://example.com/api/status">
                 </div>
 
@@ -217,8 +307,17 @@ export class AddEditView {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="interval">Check Interval (seconds)</label>
-                            <input type="number" id="interval" value="${itemToRender.interval || 60}" min="5">
+                            <label for="intervalValue">Check Interval</label>
+                            <div class="interval-group">
+                                <input type="number" id="intervalValue" value="${displayIntervalValue}" min="1">
+                                <span id="interval-unit-text" class="interval-unit-display">${displayIntervalUnit}</span>
+                            </div>
+                            <div class="radio-group">
+                                <input type="radio" id="unit-seconds" name="intervalUnit" value="seconds" ${displayIntervalUnit === 'seconds' ? 'checked' : ''}>
+                                <label for="unit-seconds">Seconds</label>
+                                <input type="radio" id="unit-minutes" name="intervalUnit" value="minutes" ${displayIntervalUnit === 'minutes' ? 'checked' : ''}>
+                                <label for="unit-minutes">Minutes</label>
+                            </div>
                         </div>
                     </div>
 
@@ -257,12 +356,27 @@ export class AddEditView {
                     const nameInput = document.getElementById('name');
                     const urlInput = document.getElementById('url');
                     const methodSelect = document.getElementById('method');
-                    const intervalInput = document.getElementById('interval');
+                    const intervalValueInput = document.getElementById('intervalValue');
                     const statusCodeInput = document.getElementById('statusCode');
                     const headersTextarea = document.getElementById('headers');
                     const usernameInput = document.getElementById('username');
                     const passwordInput = document.getElementById('password');
 
+                    const intervalUnitTextSpan = document.getElementById('interval-unit-text');
+                    const unitSecondsRadio = document.getElementById('unit-seconds');
+                    const unitMinutesRadio = document.getElementById('unit-minutes');
+
+                    function updateIntervalUnitText() {
+                        if (unitSecondsRadio.checked) {
+                            intervalUnitTextSpan.textContent = 'seconds';
+                        } else if (unitMinutesRadio.checked) {
+                            intervalUnitTextSpan.textContent = 'minutes';
+                        }
+                    }
+
+                    unitSecondsRadio.addEventListener('change', updateIntervalUnitText);
+                    unitMinutesRadio.addEventListener('change', updateIntervalUnitText);
+                    
                     document.getElementById('cancel').addEventListener('click', () => {
                         vscode.postMessage({ command: 'cancel' });
                     });
@@ -289,6 +403,30 @@ export class AddEditView {
                             return;
                         }
 
+                        const intervalValueStr = intervalValueInput.value;
+                        const selectedUnit = document.querySelector('input[name="intervalUnit"]:checked').value;
+                        const numInterval = parseInt(intervalValueStr);
+
+                        if (isNaN(numInterval) || numInterval < 1) {
+                            vscode.postMessage({ command: 'showError', message: 'Check Interval must be a positive number (at least 1).' });
+                            intervalValueInput.focus();
+                            return;
+                        }
+
+                        let intervalInSecondsClientCheck = numInterval;
+                        if (selectedUnit === 'minutes') {
+                            intervalInSecondsClientCheck = numInterval * 60;
+                        }
+                        const MIN_INTERVAL_SECONDS = 5; // This should match the backend constant
+                        if (intervalInSecondsClientCheck < MIN_INTERVAL_SECONDS) {
+                             vscode.postMessage({ 
+                                command: 'showError', 
+                                message: \`Check interval is too short. Minimum is \${MIN_INTERVAL_SECONDS} seconds. You entered \${numInterval} \${selectedUnit} (\${intervalInSecondsClientCheck}s).\`
+                            });
+                            intervalValueInput.focus();
+                            return;
+                        }
+
                         let headers = undefined;
                         const headersString = headersTextarea.value.trim();
                         if (headersString) {
@@ -298,7 +436,7 @@ export class AddEditView {
                                     throw new Error('Headers must be a JSON object.');
                                 }
                             } catch (e) {
-                                vscode.postMessage({ command: 'showError', message: 'Invalid JSON format for Headers. ' + (e instanceof Error ? e.message : '') });
+                                vscode.postMessage({ command: 'showError', message: 'Invalid JSON format for Headers. ' + (e instanceof Error ? e.message : String(e)) });
                                 headersTextarea.focus();
                                 return;
                             }
@@ -308,22 +446,19 @@ export class AddEditView {
                             name: name.trim(),
                             url: url.trim(),
                             method: methodSelect.value,
-                            interval: parseInt(intervalInput.value) || 60,
+                            intervalValue: numInterval.toString(), 
+                            intervalUnit: selectedUnit,
                             expectedStatusCode: parseInt(statusCodeInput.value) || 200,
                             headers: headers,
                             username: usernameInput.value.trim() || undefined,
-                            password: passwordInput.value || undefined // Senha pode ser string vazia se intencional
+                            password: passwordInput.value || undefined
                         };
-                        
-                        // O ID é adicionado no handleMessage se for edição
-                        
+                                                
                         vscode.postMessage({
                             command: 'save',
                             data: data
                         });
                     });
-
-                    // Lógica para 'addItem' e 'refreshList' foi removida do script do webview
                 }());
             </script>
         </body>
@@ -333,8 +468,8 @@ export class AddEditView {
 
     public restoreWebview(webviewPanel: vscode.WebviewPanel, state?: any) {
         this.panel = webviewPanel;
-        // Se houver um estado, tentamos restaurar o item que estava sendo editado/adicionado
         this.currentItemForForm = state?.itemForForm || createDefaultUrlItem();
+        // When restoring, ensure the correct item data is used to generate HTML
         this.panel.webview.html = this.getFormHtml(this.currentItemForForm);
 
         this.panel.onDidDispose(() => {
@@ -351,18 +486,8 @@ export class AddEditView {
             undefined,
             this.context.subscriptions
         );
-
-        // Se houver um 'resolvePromise' pendente, significa que o painel foi recriado
-        // durante uma operação de 'showForm'. Precisamos re-atribuir o resolvePromise.
-        // Isso é um pouco complexo e depende de como o VS Code lida com a serialização.
-        // Para simplificar, vamos assumir que se o painel é restaurado e há um resolvePromise,
-        // é provável que o usuário tenha fechado e reaberto o VS Code, e a promessa original se perdeu.
-        // O mais seguro é limpar o resolvePromise aqui se não estivermos explicitamente
-        // restaurando um estado que requer a resolução da promessa.
-        // No entanto, a lógica atual de onDidDispose já lida com a limpeza.
     }
 
-    // Adicionar método para persistir estado se necessário para restauração completa
     public persistState(): any {
         if (this.panel) {
             return { itemForForm: this.currentItemForForm };
