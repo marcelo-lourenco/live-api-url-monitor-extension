@@ -23,34 +23,40 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     })
   );
 
+  // Setup status change notification
+  // É importante registrar este "ouvinte" antes de iniciar o monitoramento.
+  monitorService.onStatusChange((errorCount: number) => {
+    listView.updateBadge(errorCount);
+    // Atualiza a lista para refletir as mudanças de status nos ícones de cada item.
+    // Isso é importante se um status mudar devido ao monitoramento em background
+    listView.refresh();
+  });
+
+  // Inicializa o contador de erros com 0 na ativação.
+  listView.updateBadge(0);
+
   // Start monitoring and then refresh list, showing progress
   await vscode.window.withProgress({
     location: vscode.ProgressLocation.Notification,
-    title: 'Initializing URL Monitor...',
+    title: 'URL Monitor',
     cancellable: false
   }, async (progress) => {
     progress.report({ increment: 0, message: 'Checking initial URL statuses...' });
     try {
       await monitorService.startMonitoring(); // Espera o primeiro ciclo de verificações
       progress.report({ increment: 90, message: 'Loading URL list...' });
-      listView.refresh(); // Agora a lista é atualizada com os status iniciais corretos
+      // A lista é atualizada pelo onStatusChange, mas uma atualização aqui garante
+      listView.refresh();
       progress.report({ increment: 100, message: 'URL Monitor is ready.' });
     } catch (error) {
       progress.report({ increment: 100, message: 'Initialization failed.' });
       vscode.window.showErrorMessage(`URL Monitor initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       console.error('URL Monitor initialization error:', error);
     }
-    // Pequeno delay para a notificação sumir, se desejado
+    // Pequeno delay para a notificação de progresso desaparecer.
     await new Promise(resolve => setTimeout(resolve, 2000));
   });
 
-  // Setup status change notification
-  monitorService.onStatusChange((hasErrors: boolean) => {
-    vscode.commands.executeCommand('setContext', 'urlMonitor.hasErrors', hasErrors);
-    // Atualiza a lista para refletir mudanças de status nos ícones
-    // Isso é importante se um status mudar devido ao monitoramento em background
-    listView.refresh();
-  });
 }
 
 export function deactivate() {

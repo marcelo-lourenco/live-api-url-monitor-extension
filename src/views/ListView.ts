@@ -103,4 +103,14 @@ export class ListView {
   public refresh() {
     this.treeDataProvider.refresh();
   }
+
+  /**
+   * Updates the badge on the activity bar icon with the count of errored URLs.
+   * @param errorCount The number of items with errors.
+   */
+  public updateBadge(errorCount: number) {
+    this.treeView.badge = errorCount > 0
+      ? { value: errorCount, tooltip: `${errorCount} URL(s) with errors` }
+      : undefined;
+  }
 }

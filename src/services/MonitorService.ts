@@ -1,10 +1,14 @@
+import * as vscode from 'vscode';
 import axios, { AxiosRequestConfig } from 'axios';
 import { UrlItem } from '../models/UrlItem';
 import { StorageService } from './StorageService';
 
 export class MonitorService {
   private timers: Map<string, NodeJS.Timeout | null> = new Map(); // Pode ser null temporariamente
-  private statusChangeListeners: ((hasErrors: boolean) => void)[] = [];
+
+  // Refatorado para usar o EventEmitter padrão do VS Code, que agora emite um número (a contagem de erros).
+  private _onStatusChange = new vscode.EventEmitter<number>();
+  public readonly onStatusChange = this._onStatusChange.event;
 
   constructor(private storageService: StorageService) { }
 
@@ -124,16 +128,14 @@ export class MonitorService {
 
   private async updateErrorStatus() {
     const items = await this.storageService.getItems();
-    const hasErrors = items.some(item => item.lastStatus === 'down');
-    this.notifyStatusChange(hasErrors);
+    // Alterado de .some() para .filter().length para obter a contagem de erros.
+    const errorCount = items.filter(item => item.lastStatus === 'down').length;
+    this.notifyStatusChange(errorCount);
   }
 
-  onStatusChange(listener: (hasErrors: boolean) => void) {
-    this.statusChangeListeners.push(listener);
-  }
-
-  private notifyStatusChange(hasErrors: boolean) {
-    this.statusChangeListeners.forEach(listener => listener(hasErrors));
+  // Este método agora recebe a contagem de erros e dispara o evento.
+  private notifyStatusChange(errorCount: number) {
+    this._onStatusChange.fire(errorCount);
   }
 
   stopMonitoring() {
