@@ -295,6 +295,15 @@ export class AddEditView {
                    -webkit-appearance: none;
                    margin: 0;
               }
+              /* Method-specific colors */
+              #method { font-weight: bold; }
+              option[data-method="GET"] { color: #6bdd9a; font-weight: bold; }
+              option[data-method="POST"] { color: #ffe47e; font-weight: bold; }
+              option[data-method="PUT"] { color: #74aef6; font-weight: bold; }
+              option[data-method="DELETE"] { color: #f79a8e; font-weight: bold; }
+              option[data-method="PATCH"] { color: #c0a8e1; font-weight: bold; }
+              option[data-method="OPTIONS"] { color: #f15eb0; font-weight: bold; }
+              option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
           </style>
       </head>
       <body>
@@ -320,11 +329,13 @@ export class AddEditView {
               <div class="form-group">
                 <label for="method">Request Method</label>
                 <select id="method">
-                  <option value="GET" ${itemToRender.method === 'GET' ? 'selected' : ''}>GET</option>
-                  <option value="OPTIONS" ${itemToRender.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
-                  <option value="POST" ${itemToRender.method === 'POST' ? 'selected' : ''}>POST</option>
-                  <option value="PUT" ${itemToRender.method === 'PUT' ? 'selected' : ''}>PUT</option>
-                  <option value="DELETE" ${itemToRender.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+                  <option value="GET" data-method="GET" ${itemToRender.method === 'GET' ? 'selected' : ''}>GET</option>
+                  <option value="POST" data-method="POST" ${itemToRender.method === 'POST' ? 'selected' : ''}>POST</option>
+                  <option value="PUT" data-method="PUT" ${itemToRender.method === 'PUT' ? 'selected' : ''}>PUT</option>
+                  <option value="DELETE" data-method="DELETE" ${itemToRender.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+                  <option value="PATCH" data-method="PATCH" ${itemToRender.method === 'PATCH' ? 'selected' : ''}>PATCH</option>
+                  <option value="OPTIONS" data-method="OPTIONS" ${itemToRender.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
+                  <option value="HEAD" data-method="HEAD" ${itemToRender.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
                 </select>
               </div>
               <div class="form-group">
@@ -372,6 +383,26 @@ export class AddEditView {
                 const usernameInput = document.getElementById('username');
                 const passwordInput = document.getElementById('password');
                 const intervalUnitSelect = document.getElementById('intervalUnit');
+
+                const methodColorMap = {
+                    'GET': '#6bdd9a',
+                    'POST': '#ffe47e',
+                    'PUT': '#74aef6',
+                    'DELETE': '#f79a8e',
+                    'PATCH': '#c0a8e1',
+                    'OPTIONS': '#f15eb0',
+                    'HEAD': '#6bdd9a'
+                };
+
+                function updateMethodSelectColor() {
+                    const selectedMethod = methodSelect.value;
+                    // Use a fallback to the default text color if something goes wrong
+                    methodSelect.style.color = methodColorMap[selectedMethod] || 'var(--vscode-input-foreground)';
+                }
+
+                methodSelect.addEventListener('change', updateMethodSelectColor);
+                // Set initial color on load
+                updateMethodSelectColor();
                 
                 document.getElementById('cancel').addEventListener('click', () => {
                     vscode.postMessage({ command: 'cancel' });
