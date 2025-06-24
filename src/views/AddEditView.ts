@@ -191,6 +191,15 @@ export class AddEditView {
                   position: sticky;
                   top: 0;
                   z-index: 10;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 6px;
+              }
+              .header-actions {
+                  display: flex;
+                  gap: 10px;
+                  align-items: center;
               }
               .header h2 {
                   margin: 0;
@@ -199,7 +208,7 @@ export class AddEditView {
               .form-container {
                   padding: 15px;
                   overflow-y: auto;
-                  height: calc(100vh - 60px - 70px); /* Adjusted for header and buttons */
+                 /*  height: calc(100vh - 60px - 70px);  *//* Adjusted for header and buttons */
                   box-sizing: border-box;
               }
               .form-group { margin-bottom: 15px; }
@@ -254,6 +263,15 @@ export class AddEditView {
               button#save:hover {
                   background: var(--vscode-button-primaryHoverBackground, var(--vscode-button-hoverBackground));
               }
+              button.secondary {
+                  background: transparent;
+                  color: var(--vscode-button-foreground);
+                  border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder));
+              }
+              button.secondary:hover {
+                  background: var(--vscode-button-hoverBackground);
+                  color: var(--vscode-button-foreground);
+              }
               .advanced { margin-top: 20px; border-top: 1px solid var(--vscode-editorGroup-border); padding-top: 20px; }
               .form-row { display: flex; gap: 15px; }
               .form-row .form-group { flex: 1; }
@@ -280,11 +298,11 @@ export class AddEditView {
           </style>
       </head>
       <body>
-        <div class="header" style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-          <h2 style="margin: 0;"">${isEditMode ? 'Edit' : 'Add'} URL Item</h2>
-          <div style="display: flex; gap: 10px; align-items: center">
-          <button id="cancel">Cancel</button>
-            <button id="save">Save</button>
+         <div class="header">
+          <h2>${isEditMode ? 'Edit' : 'Add'} URL Item</h2>
+          <div class="header-actions">
+          <button id="cancel" class="secondary">Cancel</button>
+          <button id="save">Save</button>
           </div>
         </div>
         <div class="form-container">
@@ -303,6 +321,7 @@ export class AddEditView {
                 <label for="method">Request Method</label>
                 <select id="method">
                   <option value="GET" ${itemToRender.method === 'GET' ? 'selected' : ''}>GET</option>
+                  <option value="OPTIONS" ${itemToRender.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
                   <option value="POST" ${itemToRender.method === 'POST' ? 'selected' : ''}>POST</option>
                   <option value="PUT" ${itemToRender.method === 'PUT' ? 'selected' : ''}>PUT</option>
                   <option value="DELETE" ${itemToRender.method === 'DELETE' ? 'selected' : ''}>DELETE</option>

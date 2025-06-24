@@ -2,7 +2,7 @@ export interface UrlItem {
   id: string;
   name: string;
   url: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'OPTIONS' | 'POST' | 'PUT' | 'DELETE' ;
   interval: number;
   expectedStatusCode: number;
   headers?: Record<string, string>;

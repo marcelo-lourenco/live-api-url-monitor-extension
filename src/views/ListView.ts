@@ -13,7 +13,7 @@ export class ListView {
     private context: vscode.ExtensionContext,
     private storageService: StorageService,
     private addEditView: AddEditView,
-    private monitorService: MonitorService // Adicionado MonitorService
+    private monitorService: MonitorService // Added MonitorService
   ) {
     this.treeDataProvider = new UrlTreeDataProvider(storageService);
     this.treeView = vscode.window.createTreeView('urlMonitor.list', {
@@ -37,9 +37,9 @@ export class ListView {
         }, async (progress) => {
           progress.report({ increment: 0, message: 'Fetching all URLs...' });
           await this.monitorService.forceCheckAllItems();
-          this.refresh(); // Atualiza a TreeView após todas as verificações
+          this.refresh(); // Refresh the TreeView after all checks
           progress.report({ increment: 100, message: 'Done.' });
-          // Pequeno delay para a notificação sumir, se desejado
+          // Short delay for notification to disappear, if desired
           await new Promise(resolve => setTimeout(resolve, 1500));
         });
       })
@@ -51,9 +51,9 @@ export class ListView {
       const newItemData = await this.addEditView.showAddForm();
       if (newItemData) {
         const addedItem = await this.storageService.addItem(newItemData);
-        // Verifica o status imediatamente
+        // Check status immediately
         await this.monitorService.checkItemImmediately(addedItem);
-        // Reinicia/ajusta o ciclo de monitoramento para incluir o novo item
+        // Restart/adjust the monitoring cycle to include the new item
         await this.monitorService.startMonitoring();
         this.refresh();
         vscode.window.showInformationMessage(`"${addedItem.name}" added. Initial status checked.`);
@@ -68,9 +68,9 @@ export class ListView {
       const updatedItemData = await this.addEditView.showEditForm(item);
       if (updatedItemData) {
         await this.storageService.updateItem(updatedItemData);
-        // Verifica o status imediatamente após a edição
+        // Check status immediately after editing
         await this.monitorService.checkItemImmediately(updatedItemData);
-        // Reinicia/ajusta o ciclo de monitoramento para o item editado
+        // Reset/adjust the monitoring cycle for the edited item
         await this.monitorService.startMonitoring();
         this.refresh();
         vscode.window.showInformationMessage(`"${updatedItemData.name}" updated. Status re-checked.`);
