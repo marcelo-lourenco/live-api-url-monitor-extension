@@ -13,7 +13,8 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<UrlItem> {
   }
 
   getTreeItem(element: UrlItem): vscode.TreeItem {
-    const treeItem = new vscode.TreeItem(element.name);
+    const label = `[${element.method.substring(0, 3)}] ${element.name}`;
+    const treeItem = new vscode.TreeItem(label);
     treeItem.id = element.id;
     treeItem.description = element.url;
     treeItem.contextValue = 'urlItem';
