@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { UrlItem, createDefaultUrlItem, AuthConfig } from '../models/UrlItem';
+import { UrlItem, createDefaultUrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
 
 export class AddEditView {
   private panel: vscode.WebviewPanel | undefined;
@@ -120,7 +120,9 @@ export class AddEditView {
             expectedStatusCode: dataToSave.expectedStatusCode,
             headers: dataToSave.headers,
             // The auth object is now pre-built by the webview script
+            queryParams: dataToSave.queryParams,
             auth: dataToSave.auth,
+            body: dataToSave.body,
           };
 
           if (this.currentItemForForm && 'id' in this.currentItemForForm) {
@@ -152,6 +154,8 @@ export class AddEditView {
     const itemToRender = item || createDefaultUrlItem();
     const auth = itemToRender.auth || { type: 'noauth' };
     const isEditMode = item && 'id' in item;
+    const queryParams = itemToRender.queryParams || [];
+    const body = itemToRender.body || { type: 'none' };
     const nonce = getNonce();
 
     let displayIntervalValue: number;
@@ -324,6 +328,40 @@ export class AddEditView {
                    -webkit-appearance: none;
                    margin: 0;
               }
+              /* Tabs styling */
+              .tabs {
+                  margin-top: 20px;
+                  border: 1px solid var(--vscode-editorGroup-border);
+                  border-radius: var(--input-border-radius, 3px);
+              }
+              .tab-buttons {
+                  display: flex;
+                  border-bottom: 1px solid var(--vscode-editorGroup-border);
+              }
+              .tab-button {
+                  flex: 1;
+                  padding: 10px 15px;
+                  background: var(--vscode-tab-inactiveBackground);
+                  color: var(--vscode-tab-inactiveForeground);
+                  border: none;
+                  border-right: 1px solid var(--vscode-editorGroup-border);
+                  cursor: pointer;
+                  font-weight: bold;
+                  text-align: center;
+                  border-radius: 0; /* Override default button radius */
+              }
+              .tab-button:last-child {
+                  border-right: none;
+              }
+              .tab-button.active {
+                  background: var(--vscode-tab-activeBackground);
+                  color: var(--vscode-tab-activeForeground);
+                  border-bottom: 2px solid var(--vscode-tab-activeBorder);
+                  margin-bottom: -1px; /* Overlap border */
+              }
+              .tab-button:hover:not(.active) {
+                  background: var(--vscode-tab-hoverBackground);
+              }
               .auth-fields {
                   border-left: 2px solid var(--vscode-input-border, var(--vscode-contrastBorder));
                   padding-left: 15px;
@@ -337,6 +375,24 @@ export class AddEditView {
               option[data-method="PATCH"] { color: #c0a8e1; font-weight: bold; }
               option[data-method="OPTIONS"] { color: #f15eb0; font-weight: bold; }
               option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
+              /* Tab content */
+              .tab-content {
+                  padding: 15px;
+                  display: none;
+              }
+              .tab-content.active {
+                  display: block;
+              }
+              .small-button {
+                  padding: 5px 10px;
+                  font-size: 0.9em;
+              }
+              .key-value-row {
+                  display: flex;
+                  gap: 10px;
+                  margin-bottom: 10px;
+                  align-items: center;
+              }
           </style>
       </head>
       <body>
@@ -396,64 +452,102 @@ export class AddEditView {
           <div class="advanced">
             <h2>Advanced Options</h2>
 
-            <div class="form-group">
-              <label for="headers">Headers (JSON format)</label>
-              <textarea id="headers" placeholder='${'{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer YOUR_TOKEN"\n}'}'>${itemToRender.headers ? JSON.stringify(itemToRender.headers, null, 2) : ''}</textarea>
-            </div>
-            
-            <div class="form-group">
-              <h4>Authorization</h4>
-              <div class="form-group">
-                  <label for="authType">Type</label>
-                  <select id="authType">
-                      <option value="noauth" ${auth.type === 'noauth' ? 'selected' : ''}>No Auth</option>
-                      <option value="apikey" ${auth.type === 'apikey' ? 'selected' : ''}>API Key</option>
-                      <option value="basic" ${auth.type === 'basic' ? 'selected' : ''}>Basic Auth</option>
-                      <option value="bearer" ${auth.type === 'bearer' ? 'selected' : ''}>Bearer Token</option>
-                      <option value="oauth2" ${auth.type === 'oauth2' ? 'selected' : ''}>OAuth 2.0</option>
-                      <option value="awsv4" ${auth.type === 'awsv4' ? 'selected' : ''}>AWS Signature</option>
-                      <option value="oauth1" ${auth.type === 'oauth1' ? 'selected' : ''}>OAuth 1.0</option>
-                  </select>
-              </div>
-            </div>
+            <div class="tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="params">Parameters</button>
+                    <button class="tab-button" data-tab="auth">Authorization</button>
+                    <button class="tab-button" data-tab="headers">Headers</button>
+                    <button class="tab-button" data-tab="body">Body</button>
+                </div>
 
-            <div id="auth-fields-container">
-              <!-- API Key -->
-              <div id="auth-apikey" class="auth-fields" style="display: none;">
-                  <div class="form-row">
-                      <div class="form-group"><label for="apiKeyKey">Key</label><input type="text" id="apiKeyKey" value="${auth.type === 'apikey' ? auth.key : ''}" placeholder="e.g. api_key"></div>
-                      <div class="form-group"><label for="apiKeyValue">Value</label><input type="text" id="apiKeyValue" value="${auth.type === 'apikey' ? auth.value : ''}"></div>
-                  </div>
-                  <div class="form-group">
-                      <label for="apiKeyAddTo">Add to</label>
-                      <select id="apiKeyAddTo">
-                          <option value="header" ${auth.type === 'apikey' && auth.addTo === 'header' ? 'selected' : ''}>Header</option>
-                          <option value="query" ${auth.type === 'apikey' && auth.addTo === 'query' ? 'selected' : ''}>Query Params</option>
-                      </select>
-                  </div>
-              </div>
-              <!-- Basic Auth -->
-              <div id="auth-basic" class="auth-fields" style="display: none;">
-                  <div class="form-row">
-                      <div class="form-group"><label for="basicUsername">Username</label><input type="text" id="basicUsername" value="${auth.type === 'basic' ? auth.username : ''}"></div>
-                      <div class="form-group"><label for="basicPassword">Password</label><input type="password" id="basicPassword" value="${auth.type === 'basic' ? auth.password : ''}"></div>
-                  </div>
-              </div>
-              <!-- Bearer Token -->
-              <div id="auth-bearer" class="auth-fields" style="display: none;">
-                  <div class="form-group"><label for="bearerToken">Token</label><textarea id="bearerToken" rows="3">${auth.type === 'bearer' ? auth.token : ''}</textarea></div>
-              </div>
-              <!-- OAuth 2.0 -->
-              <div id="auth-oauth2" class="auth-fields" style="display: none;">
-                  <div class="form-group"><label for="oauth2Token">Access Token</label><textarea id="oauth2Token" rows="3">${auth.type === 'oauth2' ? auth.token : ''}</textarea></div>
-                  <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input type="text" id="oauth2HeaderPrefix" value="${auth.type === 'oauth2' ? auth.headerPrefix : 'Bearer'}"></div>
-                  <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.</p>
-              </div>
-              <!-- AWS Signature -->
-              <div id="auth-awsv4" class="auth-fields" style="display: none;"><p>AWS Signature is not yet fully implemented for execution but settings will be saved.</p></div>
-              <!-- OAuth 1.0 -->
-              <div id="auth-oauth1" class="auth-fields" style="display: none;"><p>OAuth 1.0 is not yet fully implemented for execution but settings will be saved.</p></div>
+                <div id="tab-params" class="tab-content active">
+                    <h4>Query Parameters</h4>
+                    <div id="query-params-container">
+                        <!-- Dynamic rows for key-value pairs -->
+                    </div>
+                    <button id="add-query-param" class="secondary small-button">Add Query Parameter</button>
+                </div>
 
+                <div id="tab-auth" class="tab-content">
+                    <div class="form-group">
+                        <h4>Authorization</h4>
+                        <div class="form-group">
+                            <label for="authType">Type</label>
+                            <select id="authType">
+                                <option value="noauth" ${auth.type === 'noauth' ? 'selected' : ''}>No Auth</option>
+                                <option value="apikey" ${auth.type === 'apikey' ? 'selected' : ''}>API Key</option>
+                                <option value="basic" ${auth.type === 'basic' ? 'selected' : ''}>Basic Auth</option>
+                                <option value="bearer" ${auth.type === 'bearer' ? 'selected' : ''}>Bearer Token</option>
+                                <option value="oauth2" ${auth.type === 'oauth2' ? 'selected' : ''}>OAuth 2.0</option>
+                                <option value="awsv4" ${auth.type === 'awsv4' ? 'selected' : ''}>AWS Signature</option>
+                                <option value="oauth1" ${auth.type === 'oauth1' ? 'selected' : ''}>OAuth 1.0</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="auth-fields-container">
+                        <!-- API Key -->
+                        <div id="auth-apikey" class="auth-fields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group"><label for="apiKeyKey">Key</label><input type="text" id="apiKeyKey" value="${auth.type === 'apikey' ? auth.key : ''}" placeholder="e.g. api_key"></div>
+                                <div class="form-group"><label for="apiKeyValue">Value</label><input type="text" id="apiKeyValue" value="${auth.type === 'apikey' ? auth.value : ''}"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="apiKeyAddTo">Add to</label>
+                                <select id="apiKeyAddTo">
+                                    <option value="header" ${auth.type === 'apikey' && auth.addTo === 'header' ? 'selected' : ''}>Header</option>
+                                    <option value="query" ${auth.type === 'apikey' && auth.addTo === 'query' ? 'selected' : ''}>Query Params</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Basic Auth -->
+                        <div id="auth-basic" class="auth-fields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group"><label for="basicUsername">Username</label><input type="text" id="basicUsername" value="${auth.type === 'basic' ? auth.username : ''}"></div>
+                                <div class="form-group"><label for="basicPassword">Password</label><input type="password" id="basicPassword" value="${auth.type === 'basic' ? auth.password : ''}"></div>
+                            </div>
+                        </div>
+                        <!-- Bearer Token -->
+                        <div id="auth-bearer" class="auth-fields" style="display: none;">
+                            <div class="form-group"><label for="bearerToken">Token</label><textarea id="bearerToken" rows="3">${auth.type === 'bearer' ? auth.token : ''}</textarea></div>
+                        </div>
+                        <!-- OAuth 2.0 -->
+                        <div id="auth-oauth2" class="auth-fields" style="display: none;">
+                            <div class="form-group"><label for="oauth2Token">Access Token</label><textarea id="oauth2Token" rows="3">${auth.type === 'oauth2' ? auth.token : ''}</textarea></div>
+                            <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input type="text" id="oauth2HeaderPrefix" value="${auth.type === 'oauth2' ? auth.headerPrefix : 'Bearer'}"></div>
+                            <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.</p>
+                        </div>
+                        <!-- AWS Signature -->
+                        <div id="auth-awsv4" class="auth-fields" style="display: none;"><p>AWS Signature is not yet fully implemented for execution but settings will be saved.</p></div>
+                        <!-- OAuth 1.0 -->
+                        <div id="auth-oauth1" class="auth-fields" style="display: none;"><p>OAuth 1.0 is not yet fully implemented for execution but settings will be saved.</p></div>
+                    </div>
+                </div>
+
+                <div id="tab-headers" class="tab-content">
+                    <div class="form-group">
+                        <label for="headers">Headers (JSON format)</label>
+                        <textarea id="headers" placeholder='${'{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer YOUR_TOKEN"\n}'}'>${itemToRender.headers ? JSON.stringify(itemToRender.headers, null, 2) : ''}</textarea>
+                    </div>
+                </div>
+
+                <div id="tab-body" class="tab-content">
+                    <h4>Request Body</h4>
+                    <div class="form-group">
+                        <label for="bodyType">Type</label>
+                        <select id="bodyType">
+                            <option value="none" ${body.type === 'none' ? 'selected' : ''}>none</option>
+                            <option value="raw" ${body.type === 'raw' ? 'selected' : ''}>raw</option>
+                            <!-- Add other types later if needed: form-data, x-www-form-urlencoded, binary, GraphQL -->
+                        </select>
+                    </div>
+                    <div id="body-raw-container" style="display: none;">
+                        <div class="form-group">
+                            <label for="rawBody">Raw Body</label>
+                            <textarea id="rawBody" rows="10" placeholder="Enter raw request body (e.g., JSON, XML, text)">${body.type === 'raw' ? body.content : ''}</textarea>
+                        </div>
+                    </div>
+                </div>
             </div>
           </div>
         </div>
@@ -466,6 +560,11 @@ export class AddEditView {
                 const intervalValueInput = document.getElementById('intervalValue');
                 const statusCodeInput = document.getElementById('statusCode');
                 const headersTextarea = document.getElementById('headers');
+                const queryParamsContainer = document.getElementById('query-params-container');
+                const addQueryParamButton = document.getElementById('add-query-param');
+                const bodyTypeSelect = document.getElementById('bodyType');
+                const rawBodyTextarea = document.getElementById('rawBody');
+                const bodyRawContainer = document.getElementById('body-raw-container');
                 const intervalUnitSelect = document.getElementById('intervalUnit');
                 const authTypeSelect = document.getElementById('authType');
                 const methodColorMap = {
@@ -488,6 +587,60 @@ export class AddEditView {
                 // Set initial color on load
                 updateMethodSelectColor();
 
+                // --- Tab Switching Logic ---
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+
+                function switchTab(tabId) {
+                    tabButtons.forEach(button => button.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    document.querySelector(\`[data-tab="\${tabId}"]\`).classList.add('active');
+                    document.getElementById(\`tab-\${tabId}\`).classList.add('active');
+                }
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        switchTab(button.dataset.tab);
+                    });
+                });
+
+                // Initial tab display (e.g., Parameters tab active by default)
+                switchTab('params');
+
+                // --- Query Parameters (Key-Value) Logic ---
+                function createQueryParamRow(key = '', value = '') {
+                    const row = document.createElement('div');
+                    row.classList.add('key-value-row');
+                    row.innerHTML = \`
+                        <input type="text" class="query-param-key" value="\${key}" placeholder="Key">
+                        <input type="text" class="query-param-value" value="\${value}" placeholder="Value">
+                        <button type="button" class="remove-button secondary small-button">X</button>
+                    \`;
+                    row.querySelector('.remove-button').addEventListener('click', () => row.remove());
+                    return row;
+                }
+
+                addQueryParamButton.addEventListener('click', () => {
+                    queryParamsContainer.appendChild(createQueryParamRow());
+                });
+
+                // Populate existing query params on load
+                const initialQueryParams = ${JSON.stringify(queryParams)};
+                initialQueryParams.forEach(param => {
+                    queryParamsContainer.appendChild(createQueryParamRow(param.key, param.value));
+                });
+
+                // --- Body Type Logic ---
+                function switchBodyView(bodyType) {
+                    bodyRawContainer.style.display = (bodyType === 'raw') ? 'block' : 'none';
+                    // Add logic for other body types if implemented
+                }
+
+                bodyTypeSelect.addEventListener('change', (e) => {
+                    switchBodyView(e.target.value);
+                });
+
                 // --- Authorization UI Logic ---
                 function switchAuthView(authType) {
                     // Hide all auth-specific field containers
@@ -505,6 +658,9 @@ export class AddEditView {
 
                 // Set initial view on load
                 switchAuthView(authTypeSelect.value);
+
+                // Set initial body view on load
+                switchBodyView(bodyTypeSelect.value);
                 
                 document.getElementById('cancel').addEventListener('click', () => {
                     vscode.postMessage({ command: 'cancel' });
@@ -553,7 +709,7 @@ export class AddEditView {
                     if (intervalInSecondsClientCheck < MIN_INTERVAL_SECONDS) {
                       vscode.postMessage({ 
                         command: 'showError', 
-                        message: \`Check interval is too short. Minimum is \${MIN_INTERVAL_SECONDS} seconds. You entered \${numInterval} \${selectedUnit} (\${intervalInSecondsClientCheck}s).\`
+                        message: 'Check interval is too short. Minimum is ' + MIN_INTERVAL_SECONDS + ' seconds. You entered ' + numInterval + ' ' + selectedUnit + ' (' + intervalInSecondsClientCheck + 's).'
                       });
                       intervalValueInput.focus();
                       return;
@@ -573,6 +729,26 @@ export class AddEditView {
                         }
                     }
 
+                    // --- Query Parameters Data Collection ---
+                    const queryParams = [];
+                    document.querySelectorAll('#query-params-container .key-value-row').forEach(row => {
+                        const keyInput = row.querySelector('.query-param-key');
+                        const valueInput = row.querySelector('.query-param-value');
+                        if (keyInput && valueInput) {
+                            const key = keyInput.value.trim();
+                            const value = valueInput.value.trim();
+                            if (key || value) { // Only add if key or value is present
+                                queryParams.push({ key, value });
+                            }
+                        }
+                    });
+
+                    // --- Body Data Collection ---
+                    const bodyType = bodyTypeSelect.value;
+                    let bodyData = { type: bodyType };
+                    if (bodyType === 'raw') {
+                        bodyData.content = rawBodyTextarea.value;
+                    }
                     // --- Authorization Data Collection ---
                     const authType = authTypeSelect.value;
                     let authData = { type: authType };
@@ -598,8 +774,10 @@ export class AddEditView {
                         intervalValue: numInterval.toString(),
                         intervalUnit: selectedUnit,
                         expectedStatusCode: parseInt(statusCodeInput.value) || 200,
-                        headers: headers,
-                        auth: authData
+                        headers: headers, // Already collected
+                        queryParams: queryParams, // New
+                        auth: authData, // Already collected
+                        body: bodyData
                     };
                                             
                     vscode.postMessage({

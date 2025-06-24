@@ -22,6 +22,33 @@ export class MonitorService {
         timeout: 10000 // 10 segundos de timeout
       };
 
+      // Add Query Parameters
+      if (item.queryParams && item.queryParams.length > 0) {
+        const url = new URL(config.url!);
+        item.queryParams.forEach(param => {
+          if (param.key) { // Only append if key is present
+            url.searchParams.append(param.key, param.value);
+          }
+        });
+        config.url = url.toString();
+      }
+
+      // Add Request Body
+      if (item.body) {
+        if (item.body.type === 'raw' && item.body.content) {
+          config.data = item.body.content;
+          // Set Content-Type header if not already present and body is raw
+          if (!config.headers!['Content-Type']) {
+            try {
+              JSON.parse(item.body.content); // Check if it's valid JSON
+              config.headers!['Content-Type'] = 'application/json';
+            } catch {
+              config.headers!['Content-Type'] = 'text/plain';
+            }
+          }
+        }
+        // Add logic for other body types if implemented (e.g., form-data, x-www-form-urlencoded)
+      }
       const auth = item.auth || { type: 'noauth' };
 
       switch (auth.type) {

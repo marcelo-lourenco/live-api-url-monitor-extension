@@ -35,6 +35,24 @@ export interface OAuth1Auth { type: 'oauth1'; consumerKey?: string; consumerSecr
 // A union type for all possible authentication configurations.
 export type AuthConfig = NoAuth | ApiKeyAuth | BasicAuth | BearerTokenAuth | OAuth2Auth | AwsV4Auth | OAuth1Auth;
 
+export interface QueryParam {
+  key: string;
+  value: string;
+}
+
+export type BodyType = 'none' | 'raw'; // Add other types as needed (form-data, x-www-form-urlencoded, binary, GraphQL)
+
+export interface NoBody {
+  type: 'none';
+}
+
+export interface RawBody {
+  type: 'raw';
+  content: string;
+}
+
+export type RequestBody = NoBody | RawBody;
+
 export interface UrlItem {
   id: string;
   name: string;
@@ -43,7 +61,9 @@ export interface UrlItem {
   interval: number;
   expectedStatusCode: number;
   headers?: Record<string, string>;
+  queryParams?: QueryParam[]; // New: For URL query parameters
   auth?: AuthConfig;
+  body?: RequestBody; // New: For request body
   lastStatus?: 'up' | 'down';
   lastChecked?: string;
 }
@@ -56,7 +76,9 @@ export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
     interval: 60,
     expectedStatusCode: 200,
     headers: {},
-    auth: { type: 'noauth' },
+    queryParams: [], // Default to empty array
+    auth: { type: 'noauth' }, // Default to no auth
+    body: { type: 'none' }, // Default to no body
     lastStatus: undefined,
     lastChecked: undefined
   };
