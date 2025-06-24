@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
+import { UrlItem, createDefaultUrlItem, AuthConfig } from '../models/UrlItem';
 
 export class AddEditView {
   private panel: vscode.WebviewPanel | undefined;
@@ -17,7 +17,23 @@ export class AddEditView {
   }
 
   public async showEditForm(item: UrlItem): Promise<UrlItem | undefined> {
-    this.currentItemForForm = { ...item }; // Clonar para evitar mutação direta
+    const itemToEdit = { ...item }; // Clonar para evitar mutação direta
+
+    // Migration logic for old items with username/password
+    if ((itemToEdit as any).username) {
+      itemToEdit.auth = {
+        type: 'basic',
+        username: (itemToEdit as any).username,
+        password: (itemToEdit as any).password || ''
+      };
+      delete (itemToEdit as any).username;
+      delete (itemToEdit as any).password;
+    } else if (!itemToEdit.auth) {
+      // Ensure new items without auth get the default
+      itemToEdit.auth = { type: 'noauth' };
+    }
+
+    this.currentItemForForm = itemToEdit;
     // The form will derive displayIntervalValue and displayIntervalUnit from item.interval
     return this.showForm('Edit URL Item', this.currentItemForForm);
   }
@@ -103,8 +119,8 @@ export class AddEditView {
             interval: intervalInSeconds, // Final interval in seconds
             expectedStatusCode: dataToSave.expectedStatusCode,
             headers: dataToSave.headers,
-            username: dataToSave.username,
-            password: dataToSave.password,
+            // The auth object is now pre-built by the webview script
+            auth: dataToSave.auth,
           };
 
           if (this.currentItemForForm && 'id' in this.currentItemForForm) {
@@ -134,6 +150,7 @@ export class AddEditView {
 
   private getFormHtml(item?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): string {
     const itemToRender = item || createDefaultUrlItem();
+    const auth = itemToRender.auth || { type: 'noauth' };
     const isEditMode = item && 'id' in item;
     const nonce = getNonce();
 
@@ -220,7 +237,7 @@ export class AddEditView {
               select,
               textarea {
                   width: 100%;
-                  padding: 8px;
+                  padding: 6px;
                   box-sizing: border-box;
                   background: var(--vscode-input-background);
                   color: var(--vscode-input-foreground);
@@ -272,9 +289,21 @@ export class AddEditView {
                   background: var(--vscode-button-hoverBackground);
                   color: var(--vscode-button-foreground);
               }
-              .advanced { margin-top: 20px; border-top: 1px solid var(--vscode-editorGroup-border); padding-top: 20px; }
+              .advanced { margin-top: 10px; border-top: 1px solid var(--vscode-editorGroup-border); padding-top: 10px; }
               .form-row { display: flex; gap: 15px; }
               .form-row .form-group { flex: 1; }
+              .form-row .col-1 { flex: 1; }
+              .form-row .col-2 { flex: 2; }
+              .form-row .col-3 { flex: 3; }
+              .form-row .col-4 { flex: 4; }
+              .form-row .col-5 { flex: 5; }
+              .form-row .col-6 { flex: 6; }
+              .form-row .col-7 { flex: 7; }
+              .form-row .col-8 { flex: 8; }
+              .form-row .col-9 { flex: 9; }
+              .form-row .col-10 { flex: 10; }
+              .form-row .col-11 { flex: 11; }
+              .form-row .col-12 { flex: 12; }
               textarea { min-height: 80px; resize: vertical; }
               .interval-group {
                   display: flex;
@@ -283,17 +312,21 @@ export class AddEditView {
               }
               .interval-group input[type="number"] {
                   flex-grow: 1;
-                  width: auto;
+                  /* width: auto; */
+                  min-width: 50px;
               }
                .interval-group select {
                   width: auto;
                   flex-shrink: 0;
-                  min-width: 80px;
                }
                .interval-group input[type="number"]::-webkit-outer-spin-button,
                .interval-group input[type="number"]::-webkit-inner-spin-button {
                    -webkit-appearance: none;
                    margin: 0;
+              }
+              .auth-fields {
+                  border-left: 2px solid var(--vscode-input-border, var(--vscode-contrastBorder));
+                  padding-left: 15px;
               }
               /* Method-specific colors */
               #method { font-weight: bold; }
@@ -315,20 +348,36 @@ export class AddEditView {
           </div>
         </div>
         <div class="form-container">
-          <div class="form-group">
-            <label for="name">Item Name *</label>
-            <input type="text" id="name" value="${itemToRender.name || ''}" required>
+          <div class="form-row">
+            <div class="form-group col-8">
+              <label for="name">Item Name *</label>
+              <input type="text" id="name" value="${itemToRender.name || ''}" required>
+            </div>
+            <div class="form-group col-2">
+              <label for="statusCode" style="min-width: 150px;">Expected Status Code</label>
+              <input type="number" id="statusCode" value="${itemToRender.expectedStatusCode || 200}" min="100" max="599">
+            </div>
+            <div class="form-group col-2">
+              <label for="intervalValue">Check Interval</label>
+              <div class="interval-group ">
+              <div class="form-group col-1">
+                <input type="number" id="intervalValue" value="${displayIntervalValue}" min="1">
+              </div>
+              <div class="form-group col-1">
+                <select id="intervalUnit">
+                  <option value="seconds" ${displayIntervalUnit === 'seconds' ? 'selected' : ''}>Seconds</option>
+                  <option value="minutes" ${displayIntervalUnit === 'minutes' ? 'selected' : ''}>Minutes</option>
+                  <option value="hours" ${displayIntervalUnit === 'hours' ? 'selected' : ''}>Hours</option>
+                </select>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-              <label for="url">URL *</label>
-              <input type="url" id="url" value="${itemToRender.url || ''}" required placeholder="https://example.com/api/status">
-          </div>
-          <div class="advanced">
-            <h3>Advanced Options</h3>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="method">Request Method</label>
-                <select id="method">
+
+          <div class="form-row">
+            <div class="form-group col-1">
+                <label for="method">Method</label>
+                <select id="method" style="min-width: 70px;">
                   <option value="GET" data-method="GET" ${itemToRender.method === 'GET' ? 'selected' : ''}>GET</option>
                   <option value="POST" data-method="POST" ${itemToRender.method === 'POST' ? 'selected' : ''}>POST</option>
                   <option value="PUT" data-method="PUT" ${itemToRender.method === 'PUT' ? 'selected' : ''}>PUT</option>
@@ -338,36 +387,73 @@ export class AddEditView {
                   <option value="HEAD" data-method="HEAD" ${itemToRender.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label for="statusCode">Expected Status Code</label>
-                <input type="number" id="statusCode" value="${itemToRender.expectedStatusCode || 200}" min="100" max="599">
-              </div>
-              <div class="form-group">
-                <label for="intervalValue">Check Interval</label>
-                <div class="interval-group">
-                  <input type="number" id="intervalValue" value="${displayIntervalValue}" min="1">
-                  <select id="intervalUnit">
-                    <option value="seconds" ${displayIntervalUnit === 'seconds' ? 'selected' : ''}>Seconds</option>
-                    <option value="minutes" ${displayIntervalUnit === 'minutes' ? 'selected' : ''}>Minutes</option>
-                    <option value="hours" ${displayIntervalUnit === 'hours' ? 'selected' : ''}>Hours</option>
-                  </select>
-                </div>
-              </div>
+            <div class="form-group col-8">
+              <label for="url">URL *</label>
+              <input type="url" id="url" value="${itemToRender.url || ''}" required placeholder="https://example.com/api/status">
             </div>
+          </div>
+
+          <div class="advanced">
+            <h2>Advanced Options</h2>
+
             <div class="form-group">
               <label for="headers">Headers (JSON format)</label>
               <textarea id="headers" placeholder='${'{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer YOUR_TOKEN"\n}'}'>${itemToRender.headers ? JSON.stringify(itemToRender.headers, null, 2) : ''}</textarea>
             </div>
-            <h4>Basic Authentication (Optional)</h4>
-            <div class="form-row">
+            
+            <div class="form-group">
+              <h4>Authorization</h4>
               <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" value="${itemToRender.username || ''}" placeholder="Optional">
+                  <label for="authType">Type</label>
+                  <select id="authType">
+                      <option value="noauth" ${auth.type === 'noauth' ? 'selected' : ''}>No Auth</option>
+                      <option value="apikey" ${auth.type === 'apikey' ? 'selected' : ''}>API Key</option>
+                      <option value="basic" ${auth.type === 'basic' ? 'selected' : ''}>Basic Auth</option>
+                      <option value="bearer" ${auth.type === 'bearer' ? 'selected' : ''}>Bearer Token</option>
+                      <option value="oauth2" ${auth.type === 'oauth2' ? 'selected' : ''}>OAuth 2.0</option>
+                      <option value="awsv4" ${auth.type === 'awsv4' ? 'selected' : ''}>AWS Signature</option>
+                      <option value="oauth1" ${auth.type === 'oauth1' ? 'selected' : ''}>OAuth 1.0</option>
+                  </select>
               </div>
-              <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" value="${itemToRender.password || ''}" placeholder="Optional">
+            </div>
+
+            <div id="auth-fields-container">
+              <!-- API Key -->
+              <div id="auth-apikey" class="auth-fields" style="display: none;">
+                  <div class="form-row">
+                      <div class="form-group"><label for="apiKeyKey">Key</label><input type="text" id="apiKeyKey" value="${auth.type === 'apikey' ? auth.key : ''}" placeholder="e.g. api_key"></div>
+                      <div class="form-group"><label for="apiKeyValue">Value</label><input type="text" id="apiKeyValue" value="${auth.type === 'apikey' ? auth.value : ''}"></div>
+                  </div>
+                  <div class="form-group">
+                      <label for="apiKeyAddTo">Add to</label>
+                      <select id="apiKeyAddTo">
+                          <option value="header" ${auth.type === 'apikey' && auth.addTo === 'header' ? 'selected' : ''}>Header</option>
+                          <option value="query" ${auth.type === 'apikey' && auth.addTo === 'query' ? 'selected' : ''}>Query Params</option>
+                      </select>
+                  </div>
               </div>
+              <!-- Basic Auth -->
+              <div id="auth-basic" class="auth-fields" style="display: none;">
+                  <div class="form-row">
+                      <div class="form-group"><label for="basicUsername">Username</label><input type="text" id="basicUsername" value="${auth.type === 'basic' ? auth.username : ''}"></div>
+                      <div class="form-group"><label for="basicPassword">Password</label><input type="password" id="basicPassword" value="${auth.type === 'basic' ? auth.password : ''}"></div>
+                  </div>
+              </div>
+              <!-- Bearer Token -->
+              <div id="auth-bearer" class="auth-fields" style="display: none;">
+                  <div class="form-group"><label for="bearerToken">Token</label><textarea id="bearerToken" rows="3">${auth.type === 'bearer' ? auth.token : ''}</textarea></div>
+              </div>
+              <!-- OAuth 2.0 -->
+              <div id="auth-oauth2" class="auth-fields" style="display: none;">
+                  <div class="form-group"><label for="oauth2Token">Access Token</label><textarea id="oauth2Token" rows="3">${auth.type === 'oauth2' ? auth.token : ''}</textarea></div>
+                  <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input type="text" id="oauth2HeaderPrefix" value="${auth.type === 'oauth2' ? auth.headerPrefix : 'Bearer'}"></div>
+                  <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.</p>
+              </div>
+              <!-- AWS Signature -->
+              <div id="auth-awsv4" class="auth-fields" style="display: none;"><p>AWS Signature is not yet fully implemented for execution but settings will be saved.</p></div>
+              <!-- OAuth 1.0 -->
+              <div id="auth-oauth1" class="auth-fields" style="display: none;"><p>OAuth 1.0 is not yet fully implemented for execution but settings will be saved.</p></div>
+
             </div>
           </div>
         </div>
@@ -380,10 +466,8 @@ export class AddEditView {
                 const intervalValueInput = document.getElementById('intervalValue');
                 const statusCodeInput = document.getElementById('statusCode');
                 const headersTextarea = document.getElementById('headers');
-                const usernameInput = document.getElementById('username');
-                const passwordInput = document.getElementById('password');
                 const intervalUnitSelect = document.getElementById('intervalUnit');
-
+                const authTypeSelect = document.getElementById('authType');
                 const methodColorMap = {
                     'GET': '#6bdd9a',
                     'POST': '#ffe47e',
@@ -403,6 +487,24 @@ export class AddEditView {
                 methodSelect.addEventListener('change', updateMethodSelectColor);
                 // Set initial color on load
                 updateMethodSelectColor();
+
+                // --- Authorization UI Logic ---
+                function switchAuthView(authType) {
+                    // Hide all auth-specific field containers
+                    document.querySelectorAll('.auth-fields').forEach(el => el.style.display = 'none');
+                    // Show the selected one
+                    const selectedAuthContainer = document.getElementById('auth-' + authType);
+                    if (selectedAuthContainer) {
+                        selectedAuthContainer.style.display = 'block';
+                    }
+                }
+
+                authTypeSelect.addEventListener('change', (e) => {
+                    switchAuthView(e.target.value);
+                });
+
+                // Set initial view on load
+                switchAuthView(authTypeSelect.value);
                 
                 document.getElementById('cancel').addEventListener('click', () => {
                     vscode.postMessage({ command: 'cancel' });
@@ -470,17 +572,34 @@ export class AddEditView {
                             return;
                         }
                     }
+
+                    // --- Authorization Data Collection ---
+                    const authType = authTypeSelect.value;
+                    let authData = { type: authType };
+                    if (authType === 'basic') {
+                        authData.username = document.getElementById('basicUsername').value.trim();
+                        authData.password = document.getElementById('basicPassword').value;
+                    } else if (authType === 'apikey') {
+                        authData.key = document.getElementById('apiKeyKey').value.trim();
+                        authData.value = document.getElementById('apiKeyValue').value.trim();
+                        authData.addTo = document.getElementById('apiKeyAddTo').value;
+                    } else if (authType === 'bearer') {
+                        authData.token = document.getElementById('bearerToken').value.trim();
+                    } else if (authType === 'oauth2') {
+                        authData.token = document.getElementById('oauth2Token').value.trim();
+                        authData.headerPrefix = document.getElementById('oauth2HeaderPrefix').value.trim() || 'Bearer';
+                    }
+                    // For other types, only the 'type' is saved for now.
                     
                     const data = {
                         name: name.trim(),
                         url: trimmedUrl,
                         method: methodSelect.value,
-                        intervalValue: numInterval.toString(), 
+                        intervalValue: numInterval.toString(),
                         intervalUnit: selectedUnit,
                         expectedStatusCode: parseInt(statusCodeInput.value) || 200,
                         headers: headers,
-                        username: usernameInput.value.trim() || undefined,
-                        password: passwordInput.value || undefined
+                        auth: authData
                     };
                                             
                     vscode.postMessage({

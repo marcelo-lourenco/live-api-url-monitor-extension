@@ -14,18 +14,42 @@ export class MonitorService {
 
   private async performCheckLogic(item: UrlItem): Promise<'up' | 'down'> {
     try {
+      // Clone headers to avoid mutation on the original item object
       const config: AxiosRequestConfig = {
         method: item.method,
         url: item.url,
-        headers: item.headers,
+        headers: { ...item.headers },
         timeout: 10000 // 10 segundos de timeout
       };
 
-      if (item.username && item.password) {
-        config.auth = {
-          username: item.username,
-          password: item.password
-        };
+      const auth = item.auth || { type: 'noauth' };
+
+      switch (auth.type) {
+        case 'basic':
+          if (auth.username) {
+            config.auth = {
+              username: auth.username,
+              password: auth.password || ''
+            };
+          }
+          break;
+        case 'bearer':
+          if (auth.token) {
+            config.headers!['Authorization'] = `Bearer ${auth.token}`;
+          }
+          break;
+        case 'apikey':
+          if (auth.key && auth.value) {
+            if (auth.addTo === 'header') {
+              config.headers![auth.key] = auth.value;
+            } else { // 'query'
+              const url = new URL(config.url!);
+              url.searchParams.append(auth.key, auth.value);
+              config.url = url.toString();
+            }
+          }
+          break;
+        // NOTE: OAuth1, OAuth2, AWSv4 execution logic is not yet implemented.
       }
 
       const response = await axios(config);
