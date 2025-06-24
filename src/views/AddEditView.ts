@@ -83,13 +83,13 @@ export class AddEditView {
                         // Panel remains open due to webview validation.
                         return;
                     }
-
+                
                     let intervalInSeconds = rawIntervalInput;
                     if (dataToSave.intervalUnit === 'minutes') {
                         intervalInSeconds = rawIntervalInput * 60;
                     }
 
-                    const MIN_INTERVAL_SECONDS = 5; // Define your minimum interval in seconds
+                const MIN_INTERVAL_SECONDS = 5; 
                     if (intervalInSeconds < MIN_INTERVAL_SECONDS) {
                         // vscode.window.showErrorMessage(`Check interval is too short. Minimum is ${MIN_INTERVAL_SECONDS} seconds. You tried to set ${rawIntervalInput} ${dataToSave.intervalUnit} (${intervalInSeconds}s).`);
                         // Panel remains open due to webview validation.
@@ -138,16 +138,22 @@ export class AddEditView {
         const nonce = getNonce();
 
         let displayIntervalValue: number;
-        let displayIntervalUnit: 'seconds' | 'minutes';
+        let displayIntervalUnit: 'seconds' | 'minutes' | 'hours';
 
         const currentIntervalInSeconds = itemToRender.interval || 60; // Stored or default (60s for new)
 
         if (!isEditMode) { // Add mode
-            // For a new item, default display is 60 seconds.
-            // this.currentItemForForm.interval is already 60 from showAddForm.
-            displayIntervalValue = currentIntervalInSeconds; // Should be 60
-            displayIntervalUnit = 'seconds';
+            // For a new item, default display is 60 seconds, but show 1 minute if possible
+            if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
+                displayIntervalValue = currentIntervalInSeconds / 60;
+                displayIntervalUnit = 'minutes';
+            } else {
+                displayIntervalValue = currentIntervalInSeconds;
+                displayIntervalUnit = 'seconds';
+            }
         } else { // Edit mode
+            // Determine best unit for display (hours > minutes > seconds)
+            displayIntervalUnit = 'seconds';
             // If interval is a clean multiple of 60, display in minutes
             if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
                 displayIntervalValue = currentIntervalInSeconds / 60;
@@ -155,6 +161,10 @@ export class AddEditView {
             } else {
                 displayIntervalValue = currentIntervalInSeconds;
                 displayIntervalUnit = 'seconds';
+            }
+            if (currentIntervalInSeconds % 3600 === 0 && currentIntervalInSeconds >= 3600) {
+                displayIntervalValue = currentIntervalInSeconds / 3600;
+                displayIntervalUnit = 'hours';
             }
         }
 
@@ -251,29 +261,21 @@ export class AddEditView {
                 .interval-group {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 5px; /* Reduced gap */
                 }
                 .interval-group input[type="number"] {
                     flex-grow: 1;
                     width: auto; 
                 }
-                .interval-unit-display {
-                    white-space: nowrap;
-                    padding-left: 5px;
-                }
-                .radio-group {
-                    display: flex;
-                    gap: 15px; 
-                    margin-top: 8px;
-                    align-items: center;
-                }
-                .radio-group label {
-                    font-weight: normal; 
-                    margin-bottom: 0; 
-                }
-                .radio-group input[type="radio"] {
-                    width: auto; 
-                    margin-right: 5px;
+                 .interval-group select {
+                    width: auto; /* Allow select to size based on content */
+                    flex-shrink: 0; /* Prevent select from shrinking */
+                    min-width: 80px; /* Ensure minimum width */
+                 }
+                 .interval-group input[type="number"]::-webkit-outer-spin-button,
+                 .interval-group input[type="number"]::-webkit-inner-spin-button {
+                     -webkit-appearance: none;
+                     margin: 0;
                 }
             </style>
         </head>
@@ -310,13 +312,11 @@ export class AddEditView {
                             <label for="intervalValue">Check Interval</label>
                             <div class="interval-group">
                                 <input type="number" id="intervalValue" value="${displayIntervalValue}" min="1">
-                                <span id="interval-unit-text" class="interval-unit-display">${displayIntervalUnit}</span>
-                            </div>
-                            <div class="radio-group">
-                                <input type="radio" id="unit-seconds" name="intervalUnit" value="seconds" ${displayIntervalUnit === 'seconds' ? 'checked' : ''}>
-                                <label for="unit-seconds">Seconds</label>
-                                <input type="radio" id="unit-minutes" name="intervalUnit" value="minutes" ${displayIntervalUnit === 'minutes' ? 'checked' : ''}>
-                                <label for="unit-minutes">Minutes</label>
+                                <select id="intervalUnit">
+                                    <option value="seconds" ${displayIntervalUnit === 'seconds' ? 'selected' : ''}>Seconds</option>
+                                    <option value="minutes" ${displayIntervalUnit === 'minutes' ? 'selected' : ''}>Minutes</option>
+                                    <option value="hours" ${displayIntervalUnit === 'hours' ? 'selected' : ''}>Hours</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -362,20 +362,8 @@ export class AddEditView {
                     const usernameInput = document.getElementById('username');
                     const passwordInput = document.getElementById('password');
 
-                    const intervalUnitTextSpan = document.getElementById('interval-unit-text');
-                    const unitSecondsRadio = document.getElementById('unit-seconds');
-                    const unitMinutesRadio = document.getElementById('unit-minutes');
+                    const intervalUnitSelect = document.getElementById('intervalUnit');
 
-                    function updateIntervalUnitText() {
-                        if (unitSecondsRadio.checked) {
-                            intervalUnitTextSpan.textContent = 'seconds';
-                        } else if (unitMinutesRadio.checked) {
-                            intervalUnitTextSpan.textContent = 'minutes';
-                        }
-                    }
-
-                    unitSecondsRadio.addEventListener('change', updateIntervalUnitText);
-                    unitMinutesRadio.addEventListener('change', updateIntervalUnitText);
                     
                     document.getElementById('cancel').addEventListener('click', () => {
                         vscode.postMessage({ command: 'cancel' });
@@ -403,8 +391,17 @@ export class AddEditView {
                             return;
                         }
 
+                        // Allow URLs with or without schemes (http, https, ftp), hostnames, IPs, etc.
+                        // Basic validation: disallow internal whitespace in the URL/hostname.
+                        // The initial url.trim() handles leading/trailing spaces.
+                        //if (/\s/.test(url)) {
+                        //    vscode.postMessage({ command: 'showError', message: 'URL should not contain whitespace.' });
+                        //    urlInput.focus();
+                        //    return;
+                        //}
+
                         const intervalValueStr = intervalValueInput.value;
-                        const selectedUnit = document.querySelector('input[name="intervalUnit"]:checked').value;
+                        const selectedUnit = intervalUnitSelect.value;
                         const numInterval = parseInt(intervalValueStr);
 
                         if (isNaN(numInterval) || numInterval < 1) {
@@ -416,6 +413,8 @@ export class AddEditView {
                         let intervalInSecondsClientCheck = numInterval;
                         if (selectedUnit === 'minutes') {
                             intervalInSecondsClientCheck = numInterval * 60;
+                        } else if (selectedUnit === 'hours') {
+                             intervalInSecondsClientCheck = numInterval * 3600;
                         }
                         const MIN_INTERVAL_SECONDS = 5; // This should match the backend constant
                         if (intervalInSecondsClientCheck < MIN_INTERVAL_SECONDS) {
