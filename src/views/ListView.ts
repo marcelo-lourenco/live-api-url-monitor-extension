@@ -45,7 +45,8 @@ export class ListView {
           progress.report({ increment: 100, message: 'Done.' });
           await new Promise(resolve => setTimeout(resolve, 1500));
         });
-      })
+      }),
+      vscode.commands.registerCommand('urlMonitor.copyAsCurl', (item: UrlItem) => this.copyAsCurl(item))
       // NOTA: O comando 'urlMonitor.importCurl' é registrado em extension.ts para manter a lógica de comando
       // separada da lógica da view, evitando acoplamento excessivo.
     );
@@ -104,6 +105,78 @@ export class ListView {
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to delete item: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+  }
+
+  public async copyAsCurl(item: UrlItem) {
+    try {
+      let curlCommand = `curl -X ${item.method} `;
+      let url = item.url;
+
+      // Add query parameters
+      if (item.queryParams && item.queryParams.length > 0) {
+        const query = item.queryParams
+          .filter(p => p.key)
+          .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+          .join('&');
+        if (query) {
+          url += `${url.includes('?') ? '&' : '?'}${query}`;
+        }
+      }
+      
+      // Quote the URL
+      curlCommand += `'${url}'`;
+
+      // Add headers
+      if (item.headers) {
+        for (const key in item.headers) {
+          if (Object.prototype.hasOwnProperty.call(item.headers, key)) {
+            // Escape single quotes in header values
+            const headerValue = String(item.headers[key]).replace(/'/g, "'\\''");
+            curlCommand += ` -H '${key}: ${headerValue}'`;
+          }
+        }
+      }
+
+      // Add authentication
+      if (item.auth) {
+        switch (item.auth.type) {
+          case 'basic':
+            if (item.auth.username) {
+              const credentials = `${item.auth.username}:${item.auth.password || ''}`;
+              curlCommand += ` -u '${credentials}'`;
+            }
+            break;
+          case 'bearer':
+            if (item.auth.token) {
+              curlCommand += ` -H 'Authorization: Bearer ${item.auth.token}'`;
+            }
+            break;
+          case 'apikey':
+            if (item.auth.key && item.auth.value) {
+              if (item.auth.addTo === 'header') {
+                curlCommand += ` -H '${item.auth.key}: ${item.auth.value}'`;
+              } else { // query - already handled by URL construction
+                // If API key is added to query, it's already part of the `url` variable.
+                // No need to add it again here.
+              }
+            }
+            break;
+          // Add other auth types if needed
+        }
+      }
+
+      // Add body
+      if (item.body && item.body.type === 'raw' && item.body.content) {
+        // Use $'...' for ANSI C quoting to handle special characters and newlines
+        const bodyContent = item.body.content.replace(/'/g, "'\\''"); // Escape single quotes
+        curlCommand += ` --data-raw $'${bodyContent}'`;
+      }
+
+      await vscode.env.clipboard.writeText(curlCommand);
+      vscode.window.showInformationMessage(`cURL command for "${item.name}" copied to clipboard!`);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to copy cURL command: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

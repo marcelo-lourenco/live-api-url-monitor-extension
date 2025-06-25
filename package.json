@@ -57,6 +57,11 @@
         "command": "urlMonitor.refreshList",
         "title": "Refresh List",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "urlMonitor.copyAsCurl",
+        "title": "Copy as cURL",
+        "icon": "$(copy)"
       }
     ],
     "viewsContainers": {
@@ -103,6 +108,11 @@
         },
         {
           "command": "urlMonitor.deleteItem",
+          "when": "view == urlMonitor.list && viewItem == urlItem",
+          "group": "inline"
+        },
+        {
+          "command": "urlMonitor.copyAsCurl",
           "when": "view == urlMonitor.list && viewItem == urlItem",
           "group": "inline"
         }
