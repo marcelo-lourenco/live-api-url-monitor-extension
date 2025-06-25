@@ -3,6 +3,7 @@ import { StorageService } from './services/StorageService';
 import { MonitorService } from './services/MonitorService';
 import { ListView } from './views/ListView';
 import { AddEditView } from './views/AddEditView';
+import { ImportCurlCommand } from './commands/importCurl';
 
 export async function activate(context: vscode.ExtensionContext) { // Marcado como async
   // Initialize services
@@ -10,6 +11,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
   const monitorService = new MonitorService(storageService);
   const addEditView = new AddEditView(context);
   // Passa monitorService para ListView
+  const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
   const listView = new ListView(context, storageService, addEditView, monitorService);
 
   // Register webview panel serializer
@@ -22,6 +24,16 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
       }
     })
   );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('urlMonitor.importCurl', async () => {
+      const success = await importCurlCommand.execute();
+      if (success) {
+        listView.refresh();
+      }
+    })
+  );
+
 
   // Setup status change notification
   // É importante registrar este "ouvinte" antes de iniciar o monitoramento.

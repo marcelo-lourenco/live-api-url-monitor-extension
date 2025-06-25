@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { UrlItem } from '../models/UrlItem';
+
 import { StorageService } from '../services/StorageService';
 
 export class UrlTreeDataProvider implements vscode.TreeDataProvider<UrlItem> {

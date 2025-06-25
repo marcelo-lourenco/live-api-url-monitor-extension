@@ -13,7 +13,7 @@ export class ListView {
     private context: vscode.ExtensionContext,
     private storageService: StorageService,
     private addEditView: AddEditView,
-    private monitorService: MonitorService
+    private monitorService: MonitorService,
   ) {
     this.treeDataProvider = new UrlTreeDataProvider(storageService);
     this.treeView = vscode.window.createTreeView('urlMonitor.list', {
@@ -26,8 +26,12 @@ export class ListView {
 
   private registerCommands() {
     this.context.subscriptions.push(
+      // Comandos iniciados a partir da UI da lista (barra de título, menu de contexto)
       vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem()),
-      vscode.commands.registerCommand('urlMonitor.editItem', (itemId: string) => this.editItem(itemId)),
+      vscode.commands.registerCommand('urlMonitor.editItem', (itemOrId: UrlItem | string) => {
+        const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+        this.editItem(itemId);
+      }),
       vscode.commands.registerCommand('urlMonitor.deleteItem', (item: UrlItem) => this.deleteItem(item)),
       vscode.commands.registerCommand('urlMonitor.refreshList', async () => {
         await vscode.window.withProgress({
@@ -42,6 +46,8 @@ export class ListView {
           await new Promise(resolve => setTimeout(resolve, 1500));
         });
       })
+      // NOTA: O comando 'urlMonitor.importCurl' é registrado em extension.ts para manter a lógica de comando
+      // separada da lógica da view, evitando acoplamento excessivo.
     );
   }
 
@@ -62,7 +68,8 @@ export class ListView {
 
   public async editItem(itemId: string) {
     try {
-      const item = (await this.storageService.getItems()).find(i => i.id === itemId);
+      const items = await this.storageService.getItems();
+      const item = items.find(i => i.id === itemId);
       if (!item) {
         vscode.window.showErrorMessage('Item not found for editing.');
         return;
