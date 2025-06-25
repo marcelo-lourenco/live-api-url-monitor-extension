@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { StorageService } from './services/StorageService';
 import { MonitorService } from './services/MonitorService';
 import { ListView } from './views/ListView';
+import { ExportItemsCommand } from './commands/exportItems';
+import { ImportItemsCommand } from './commands/importItems';
 import { AddEditView } from './views/AddEditView';
 import { ImportCurlCommand } from './commands/importCurl';
 
@@ -11,6 +13,8 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
   const monitorService = new MonitorService(storageService);
   const addEditView = new AddEditView(context);
   // Passa monitorService para ListView
+  const exportItemsCommand = new ExportItemsCommand(storageService);
+  const importItemsCommand = new ImportItemsCommand(storageService, monitorService);
   const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
   const listView = new ListView(context, storageService, addEditView, monitorService);
 
@@ -23,6 +27,14 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
         addEditView.restoreWebview(webviewPanel);
       }
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('urlMonitor.exportItems', () => exportItemsCommand.execute())
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('urlMonitor.importItems', () => importItemsCommand.execute())
   );
 
   context.subscriptions.push(

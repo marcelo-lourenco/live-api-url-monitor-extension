@@ -44,6 +44,16 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "urlMonitor.exportItems",
+        "title": "Export Items",
+        "icon": "$(git-stash-pop)"
+      },
+      {
+        "command": "urlMonitor.importItems",
+        "title": "Import Items",
+        "icon": "$(git-stash)"
+      },
+      {
         "command": "urlMonitor.editItem",
         "title": "Edit URL Item",
         "icon": "$(edit)"
@@ -96,6 +106,16 @@
         },
         {
           "command": "urlMonitor.refreshList",
+          "when": "view == urlMonitor.list",
+          "group": "navigation"
+        },
+        {
+          "command": "urlMonitor.exportItems",
+          "when": "view == urlMonitor.list",
+          "group": "navigation"
+        },
+        {
+          "command": "urlMonitor.importItems",
           "when": "view == urlMonitor.list",
           "group": "navigation"
         }
