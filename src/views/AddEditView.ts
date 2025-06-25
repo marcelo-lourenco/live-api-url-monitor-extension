@@ -284,7 +284,7 @@ export class AddEditView {
           keyInput.type = 'text';
           keyInput.className = 'header-key';
           keyInput.value = key;
-          keyInput.placeholder = 'Key';
+          keyInput.placeholder = 'Key (common or custom)';
           keyInput.setAttribute('list', 'header-suggestions');
           row.appendChild(keyInput);
 
@@ -354,6 +354,32 @@ export class AddEditView {
 
         switchAuthView(authTypeSelect.value);
         switchBodyView(bodyTypeSelect.value);
+        
+        // Beautify for Body
+        const rawBodyLanguageSelect = document.getElementById('rawBodyLanguage');
+        const beautifyBtn = document.getElementById('beautify-btn');
+
+        if (beautifyBtn && rawBodyLanguageSelect && rawBodyTextarea) {
+            beautifyBtn.addEventListener('click', () => {
+                const language = rawBodyLanguageSelect.value;
+                const currentBody = rawBodyTextarea.value;
+
+                if (!currentBody.trim()) {
+                    return; // Nothing to beautify
+                }
+
+                try {
+                    if (language === 'json') {
+                        const jsonObj = JSON.parse(currentBody);
+                        rawBodyTextarea.value = JSON.stringify(jsonObj, null, 2);
+                    } else {
+                        vscode.postMessage({ command: 'showError', message: 'Beautify for ' + language.toUpperCase() + ' is not yet implemented.' });
+                    }
+                } catch (e) {
+                    vscode.postMessage({ command: 'showError', message: 'Invalid JSON format. Cannot beautify.' });
+                }
+            });
+        }
         
         document.getElementById('cancel')?.addEventListener('click', () => {
           vscode.postMessage({ command: 'cancel' });
@@ -881,7 +907,18 @@ export class AddEditView {
                     </div>
                     <div id="body-raw-container" style="display: none;">
                         <div class="form-group">
-                            <label for="rawBody">Raw Body</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label for="rawBody" style="margin-bottom: 0;">Raw Body</label>
+                                <div>
+                                    <select id="rawBodyLanguage" style="width: auto; margin-right: 10px;">
+                                        <option value="json">JSON</option>
+                                        <option value="html">HTML</option>
+                                        <option value="xml">XML</option>
+                                        <option value="text" selected>Text</option>
+                                    </select>
+                                    <button type="button" id="beautify-btn" class="secondary small-button">Beautify</button>
+                                </div>
+                            </div>
                             <textarea id="rawBody" rows="10" placeholder="Enter raw request body (e.g., JSON, XML, text)">${body.type === 'raw' ? body.content : ''}</textarea>
                         </div>
                     </div>
