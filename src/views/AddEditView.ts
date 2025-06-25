@@ -81,7 +81,6 @@ export class AddEditView {
       case 'save':
         if (this.resolvePromise) {
           const dataToSave = message.data;
-          vscode.window.showWarningMessage(`Extension: Data received from webview for saving. Name: ${dataToSave.name}, URL: ${dataToSave.url}`); // DEBUG LOG
 
           const rawIntervalInput = parseInt(dataToSave.intervalValue);
           if (isNaN(rawIntervalInput) || rawIntervalInput < 1) return;
@@ -115,7 +114,6 @@ export class AddEditView {
             finalData.id = (this.currentItemForForm as UrlItem).id;
           }
 
-          vscode.window.showWarningMessage(`Extension: Final data prepared for storage. Name: ${finalData.name}, URL: ${finalData.url}`); // DEBUG LOG
           this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
           this.resolvePromise = undefined;
           this.panel?.dispose();
@@ -130,7 +128,7 @@ export class AddEditView {
         vscode.window.showErrorMessage(message.message);
         break;
       default:
-        vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`);
+        // vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`); // Removed debug message
         break;
     }
   }
@@ -139,7 +137,7 @@ export class AddEditView {
     // IMPORTANT: This entire string must be valid JavaScript. No TypeScript syntax (like 'as Type')
     // or unescaped template literals (backticks) that could conflict with the outer HTML template.
     return `
-      console.log('Webview script started!'); // This log should appear in Webview Developer Tools (Ctrl+Shift+P -> Developer: Open Webview Developer Tools)
+      // console.log('Webview script started!'); // Removed debug log
       (function() {
         const vscode = acquireVsCodeApi();
         const nameInput = document.getElementById('name');
@@ -432,7 +430,7 @@ export class AddEditView {
               body: bodyData
           };
                                   
-          console.log('Webview: Data being sent to extension:', data); // DEBUG LOG
+          // console.log('Webview: Data being sent to extension:', data); // Removed debug log
           vscode.postMessage({
               command: 'save',
               data: data
