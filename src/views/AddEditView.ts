@@ -10,16 +10,13 @@ export class AddEditView {
 
   public async showAddForm(): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
     this.currentItemForForm = createDefaultUrlItem();
-    // Default interval for a new item is 60 seconds.
-    // The form will display this as 60 and 'seconds' selected.
     this.currentItemForForm.interval = 60;
     return this.showForm('Add URL Item', this.currentItemForForm);
   }
 
   public async showEditForm(item: UrlItem): Promise<UrlItem | undefined> {
-    const itemToEdit = { ...item }; // Clonar para evitar mutação direta
+    const itemToEdit = { ...item };
 
-    // Migration logic for old items with username/password
     if ((itemToEdit as any).username) {
       itemToEdit.auth = {
         type: 'basic',
@@ -29,27 +26,22 @@ export class AddEditView {
       delete (itemToEdit as any).username;
       delete (itemToEdit as any).password;
     } else if (!itemToEdit.auth) {
-      // Ensure new items without auth get the default
       itemToEdit.auth = { type: 'noauth' };
     }
 
     this.currentItemForForm = itemToEdit;
-    // The form will derive displayIntervalValue and displayIntervalUnit from item.interval
     return this.showForm('Edit URL Item', this.currentItemForForm);
   }
 
   private async showForm(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): Promise<any> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
-      // Pass itemData to ensure the correct data is used for the form
       this.createOrShowPanel(title, itemData || this.currentItemForForm);
     });
   }
 
   private createOrShowPanel(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
+    const column = vscode.window.activeTextEditor?.viewColumn;
 
     if (this.panel) {
       this.panel.title = title;
@@ -72,10 +64,8 @@ export class AddEditView {
       this.panel.onDidDispose(() => {
         this.panel = undefined;
         this.currentItemForForm = undefined;
-        if (this.resolvePromise) {
-          this.resolvePromise(undefined);
-          this.resolvePromise = undefined;
-        }
+        this.resolvePromise?.(undefined);
+        this.resolvePromise = undefined;
       }, null, this.context.subscriptions);
 
       this.panel.webview.onDidReceiveMessage(
@@ -91,35 +81,31 @@ export class AddEditView {
       case 'save':
         if (this.resolvePromise) {
           const dataToSave = message.data;
-          const rawIntervalInput = parseInt(dataToSave.intervalValue);
+          vscode.window.showWarningMessage(`Extension: Data received from webview for saving. Name: ${dataToSave.name}, URL: ${dataToSave.url}`); // DEBUG LOG
 
-          // Basic validation (already done in webview, but good for robustness)
-          if (isNaN(rawIntervalInput) || rawIntervalInput < 1) {
-            // vscode.window.showErrorMessage('Interval must be a positive number (at least 1).');
-            // Panel remains open due to webview validation.
-            return;
-          }
+          const rawIntervalInput = parseInt(dataToSave.intervalValue);
+          if (isNaN(rawIntervalInput) || rawIntervalInput < 1) return;
 
           let intervalInSeconds = rawIntervalInput;
-          if (dataToSave.intervalUnit === 'minutes') {
-            intervalInSeconds = rawIntervalInput * 60;
-          }
+          if (dataToSave.intervalUnit === 'minutes') intervalInSeconds = rawIntervalInput * 60;
 
           const MIN_INTERVAL_SECONDS = 5;
-          if (intervalInSeconds < MIN_INTERVAL_SECONDS) {
-            // vscode.window.showErrorMessage(`Check interval is too short. Minimum is ${MIN_INTERVAL_SECONDS} seconds. You tried to set ${rawIntervalInput} ${dataToSave.intervalUnit} (${intervalInSeconds}s).`);
-            // Panel remains open due to webview validation.
-            return;
-          }
+          if (intervalInSeconds < MIN_INTERVAL_SECONDS) return;
 
           const finalData: any = {
             name: dataToSave.name,
-            url: dataToSave.url,
+            url: (() => {
+              try {
+                const urlObject = new URL(dataToSave.url);
+                return urlObject.origin + urlObject.pathname;
+              } catch {
+                return dataToSave.url.split('?')[0];
+              }
+            })(),
             method: dataToSave.method,
-            interval: intervalInSeconds, // Final interval in seconds
+            interval: intervalInSeconds,
             expectedStatusCode: dataToSave.expectedStatusCode,
             headers: dataToSave.headers,
-            // The auth object is now pre-built by the webview script
             queryParams: dataToSave.queryParams,
             auth: dataToSave.auth,
             body: dataToSave.body,
@@ -129,25 +115,331 @@ export class AddEditView {
             finalData.id = (this.currentItemForForm as UrlItem).id;
           }
 
+          vscode.window.showWarningMessage(`Extension: Final data prepared for storage. Name: ${finalData.name}, URL: ${finalData.url}`); // DEBUG LOG
           this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
           this.resolvePromise = undefined;
-          this.panel?.dispose(); // Dispose panel on successful save
+          this.panel?.dispose();
         }
         break;
       case 'cancel':
-        if (this.resolvePromise) {
-          this.resolvePromise(undefined);
-          this.resolvePromise = undefined;
-        }
+        this.resolvePromise?.(undefined);
+        this.resolvePromise = undefined;
         this.panel?.dispose();
         break;
-      case 'showError': // This message comes from the webview for its own validation
+      case 'showError':
         vscode.window.showErrorMessage(message.message);
         break;
       default:
-        vscode.window.showWarningMessage(`Received unknown message from webview: ${JSON.stringify(message)}`);
+        vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`);
         break;
     }
+  }
+
+  private getWebviewScript(itemToRender: any, queryParams: any): string {
+    // IMPORTANT: This entire string must be valid JavaScript. No TypeScript syntax (like 'as Type')
+    // or unescaped template literals (backticks) that could conflict with the outer HTML template.
+    return `
+      console.log('Webview script started!'); // This log should appear in Webview Developer Tools (Ctrl+Shift+P -> Developer: Open Webview Developer Tools)
+      (function() {
+        const vscode = acquireVsCodeApi();
+        const nameInput = document.getElementById('name');
+        const urlInput = document.getElementById('url');
+        const methodSelect = document.getElementById('method');
+        const intervalValueInput = document.getElementById('intervalValue');
+        const statusCodeInput = document.getElementById('statusCode');
+        const headersTextarea = document.getElementById('headers');
+        const queryParamsContainer = document.getElementById('query-params-container');
+        const addQueryParamButton = document.getElementById('add-query-param');
+        const bodyTypeSelect = document.getElementById('bodyType');
+        const rawBodyTextarea = document.getElementById('rawBody');
+        const bodyRawContainer = document.getElementById('body-raw-container');
+        const intervalUnitSelect = document.getElementById('intervalUnit');
+        const authTypeSelect = document.getElementById('authType');
+        let isProgrammaticUpdate = false;
+
+        const methodColorMap = {
+          'GET': '#6bdd9a', 'POST': '#ffe47e', 'PUT': '#74aef6', 'DELETE': '#f79a8e',
+          'PATCH': '#c0a8e1', 'OPTIONS': '#f15eb0', 'HEAD': '#6bdd9a'
+        };
+
+        function updateMethodSelectColor() {
+          const selectedMethod = methodSelect.value;
+          methodSelect.style.color = methodColorMap[selectedMethod] || 'var(--vscode-input-foreground)';
+        }
+
+        methodSelect.addEventListener('change', updateMethodSelectColor);
+        updateMethodSelectColor();
+
+        function updateUrlFromParams() {
+          if (isProgrammaticUpdate) return;
+          isProgrammaticUpdate = true;
+          try {
+            let baseUrl = (urlInput.value.split('?')[0] || '').trim();
+            const params = new URLSearchParams();
+            document.querySelectorAll('#query-params-container .key-value-row').forEach(row => {
+              const keyInput = row.querySelector('.query-param-key');
+              const valueInput = row.querySelector('.query-param-value');
+              const key = keyInput?.value.trim();
+              const value = valueInput?.value.trim();
+              if (key) params.append(key, value);
+            });
+            const queryString = params.toString();
+            urlInput.value = queryString ? baseUrl + '?' + queryString : baseUrl;
+          } finally {
+            isProgrammaticUpdate = false;
+          }
+        }
+
+        function updateParamsFromUrl() {
+          if (isProgrammaticUpdate) return;
+          isProgrammaticUpdate = true;
+          try {
+            const fullUrl = urlInput.value.trim();
+            if (!fullUrl) {
+              queryParamsContainer.innerHTML = '';
+              return;
+            }
+            let url;
+            try {
+              url = new URL(fullUrl);
+            } catch (e) {
+              return; // URL is not valid yet (e.g., user is typing). Do not extract params.
+            }
+
+            queryParamsContainer.innerHTML = '';
+            url.searchParams.forEach((value, key) => {
+              queryParamsContainer.appendChild(createQueryParamRow(key, value));
+            });
+            urlInput.value = url.origin + url.pathname;
+          } finally {
+            isProgrammaticUpdate = false;
+          }
+        }
+
+        urlInput.addEventListener('blur', updateParamsFromUrl);
+        queryParamsContainer.addEventListener('input', updateUrlFromParams);
+        queryParamsContainer.addEventListener('click', (event) => {
+          if (event.target && event.target.classList.contains('remove-button')) {
+            event.target.closest('.key-value-row')?.remove();
+            updateUrlFromParams();
+          }
+        });
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        function switchTab(tabId) {
+          tabButtons.forEach(button => button.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          document.querySelector('[data-tab="' + tabId + '"]')?.classList.add('active');
+          document.getElementById('tab-' + tabId)?.classList.add('active');
+        }
+
+        tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            switchTab(button.dataset.tab || '');
+          });
+        });
+
+        switchTab('params');
+
+        function createQueryParamRow(key = '', value = '') {
+          const row = document.createElement('div');
+          row.classList.add('key-value-row');
+
+          const keyInput = document.createElement('input');
+          keyInput.type = 'text';
+          keyInput.className = 'query-param-key';
+          keyInput.value = key;
+          keyInput.placeholder = 'Key';
+          row.appendChild(keyInput);
+
+          const valueInput = document.createElement('input');
+          valueInput.type = 'text';
+          valueInput.className = 'query-param-value';
+          valueInput.value = value;
+          valueInput.placeholder = 'Value';
+          row.appendChild(valueInput);
+
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'remove-button secondary small-button';
+          removeButton.textContent = 'X';
+          row.appendChild(removeButton);
+          
+          return row;
+        }
+
+        addQueryParamButton.addEventListener('click', () => {
+          queryParamsContainer.appendChild(createQueryParamRow());
+          updateUrlFromParams();
+        });
+
+        // These values are injected from the outer TypeScript template, so they need to be stringified.
+        const initialQueryParams = ${JSON.stringify(queryParams)};
+        const initialUrl = ${JSON.stringify(itemToRender.url || '')};
+
+        urlInput.value = initialUrl;
+        initialQueryParams.forEach(param => {
+          queryParamsContainer.appendChild(createQueryParamRow(param.key, param.value));
+        });
+        updateUrlFromParams();
+
+        function switchBodyView(bodyType) {
+          bodyRawContainer.style.display = (bodyType === 'raw') ? 'block' : 'none';
+        }
+
+        bodyTypeSelect.addEventListener('change', (e) => {
+          switchBodyView(e.target.value);
+        });
+
+        function switchAuthView(authType) {
+          document.querySelectorAll('.auth-fields').forEach(el => el.style.display = 'none');
+          const selectedAuthContainer = document.getElementById('auth-' + authType);
+          if (selectedAuthContainer) {
+            selectedAuthContainer.style.display = 'block';
+          }
+        }
+
+        authTypeSelect.addEventListener('change', (e) => {
+          switchAuthView(e.target.value);
+        });
+
+        switchAuthView(authTypeSelect.value);
+        switchBodyView(bodyTypeSelect.value);
+        
+        document.getElementById('cancel')?.addEventListener('click', () => {
+          vscode.postMessage({ command: 'cancel' });
+        });
+        
+        document.getElementById('save')?.addEventListener('click', () => {
+          const name = nameInput.value;
+          const url = urlInput.value;
+          const trimmedUrl = url.trim();
+          
+          if (!name.trim()) {
+            vscode.postMessage({ command: 'showError', message: 'Item Name is required.' });
+            nameInput.focus();
+            return;
+          }
+          if (!trimmedUrl) {
+            vscode.postMessage({ command: 'showError', message: 'URL is required.' });
+            urlInput.focus();
+            return;
+          }
+          try {
+            new URL(trimmedUrl);
+          } catch (e) {
+            vscode.postMessage({ command: 'showError', message: 'Invalid URL. Please include the protocol (e.g. http:// or https://).' });
+            urlInput.focus();
+            return;
+          }
+          const intervalValueStr = intervalValueInput.value;
+          const selectedUnit = intervalUnitSelect.value;
+          const numInterval = parseInt(intervalValueStr);
+          if (isNaN(numInterval) || numInterval < 1) {
+            vscode.postMessage({ command: 'showError', message: 'Check Interval must be a positive number (at least 1).' });
+            intervalValueInput.focus();
+            return;
+          }
+          let intervalInSecondsClientCheck = numInterval;
+          if (selectedUnit === 'minutes') {
+            intervalInSecondsClientCheck = numInterval * 60;
+          } else if (selectedUnit === 'hours') {
+            intervalInSecondsClientCheck = numInterval * 3600;
+          }
+          const MIN_INTERVAL_SECONDS = 5;
+          if (intervalInSecondsClientCheck < MIN_INTERVAL_SECONDS) {
+            vscode.postMessage({ 
+              command: 'showError', 
+              message: 'Check interval is too short. Minimum is ' + MIN_INTERVAL_SECONDS + ' seconds. You entered ' + numInterval + ' ' + selectedUnit + ' (' + intervalInSecondsClientCheck + 's).'
+            });
+            intervalValueInput.focus();
+            return;
+          }
+          let headers = undefined;
+          const headersString = headersTextarea.value.trim();
+          if (headersString) {
+            try {
+              headers = JSON.parse(headersString);
+              if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
+                throw new Error('Headers must be a JSON object.');
+              }
+            } catch (e) {
+              vscode.postMessage({ command: 'showError', message: 'Invalid JSON format for Headers. ' + (e instanceof Error ? e.message : String(e)) });
+              headersTextarea.focus();
+              return;
+            }
+          }
+
+          const queryParams = [];
+          document.querySelectorAll('#query-params-container .key-value-row').forEach(row => {
+              const keyInput = row.querySelector('.query-param-key');
+              const valueInput = row.querySelector('.query-param-value');
+              if (keyInput && valueInput) {
+                  const key = keyInput.value.trim();
+                  const value = valueInput.value.trim();
+                  if (key || value) {
+                      queryParams.push({ key, value });
+                  }
+              }
+          });
+
+          const bodyType = bodyTypeSelect.value;
+          let bodyData = { type: 'none' };
+          if (bodyType === 'raw') {
+              bodyData = { type: 'raw', content: rawBodyTextarea.value };
+          }
+          const authType = authTypeSelect.value;
+          let authData = { type: 'noauth' };
+          if (authType === 'basic') {
+              authData = {
+                  type: 'basic',
+                  username: document.getElementById('basicUsername').value.trim(),
+                  password: document.getElementById('basicPassword').value
+              };
+          } else if (authType === 'apikey') {
+              authData = {
+                  type: 'apikey',
+                  key: document.getElementById('apiKeyKey').value.trim(),
+                  value: document.getElementById('apiKeyValue').value.trim(),
+                  addTo: document.getElementById('apiKeyAddTo').value
+              };
+          } else if (authType === 'bearer') {
+              authData = {
+                  type: 'bearer',
+                  token: document.getElementById('bearerToken').value.trim()
+              };
+          } else if (authType === 'oauth2') {
+              authData = {
+                  type: 'oauth2',
+                  token: document.getElementById('oauth2Token').value.trim(),
+                  headerPrefix: document.getElementById('oauth2HeaderPrefix').value.trim() || 'Bearer'
+              };
+          }
+          
+          const data = {
+              name: name.trim(),
+              url: trimmedUrl,
+              method: methodSelect.value,
+              intervalValue: numInterval.toString(),
+              intervalUnit: selectedUnit,
+              expectedStatusCode: parseInt(statusCodeInput.value) || 200,
+              headers: headers,
+              queryParams: queryParams,
+              auth: authData,
+              body: bodyData
+          };
+                                  
+          console.log('Webview: Data being sent to extension:', data); // DEBUG LOG
+          vscode.postMessage({
+              command: 'save',
+              data: data
+          });
+        });
+      }());
+    `;
   }
 
   private getFormHtml(item?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): string {
@@ -161,10 +453,9 @@ export class AddEditView {
     let displayIntervalValue: number;
     let displayIntervalUnit: 'seconds' | 'minutes' | 'hours';
 
-    const currentIntervalInSeconds = itemToRender.interval || 60; // Stored or default (60s for new)
+    const currentIntervalInSeconds = itemToRender.interval || 60;
 
-    if (!isEditMode) { // Add mode
-      // For a new item, default display is 60 seconds, but show 1 minute if possible
+    if (!isEditMode) {
       if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
         displayIntervalValue = currentIntervalInSeconds / 60;
         displayIntervalUnit = 'minutes';
@@ -172,10 +463,8 @@ export class AddEditView {
         displayIntervalValue = currentIntervalInSeconds;
         displayIntervalUnit = 'seconds';
       }
-    } else { // Edit mode
-      // Determine best unit for display (hours > minutes > seconds)
+    } else {
       displayIntervalUnit = 'seconds';
-      // If interval is a clean multiple of 60, display in minutes
       if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
         displayIntervalValue = currentIntervalInSeconds / 60;
         displayIntervalUnit = 'minutes';
@@ -188,6 +477,9 @@ export class AddEditView {
         displayIntervalUnit = 'hours';
       }
     }
+
+    // Get the pure JavaScript content
+    const webviewScriptContent = this.getWebviewScript(itemToRender, queryParams);
 
     return `
       <!DOCTYPE html>
@@ -400,7 +692,7 @@ export class AddEditView {
           <h2>${isEditMode ? 'Edit' : 'Add'} URL Item</h2>
           <div class="header-actions">
           <button id="cancel" class="secondary">Cancel</button>
-          <button id="save">Save</button>
+          <button id="save" class="primary">Save</button>
           </div>
         </div>
         <div class="form-container">
@@ -552,240 +844,7 @@ export class AddEditView {
           </div>
         </div>
         <script nonce="${nonce}">
-            (function() {
-                const vscode = acquireVsCodeApi();
-                const nameInput = document.getElementById('name');
-                const urlInput = document.getElementById('url');
-                const methodSelect = document.getElementById('method');
-                const intervalValueInput = document.getElementById('intervalValue');
-                const statusCodeInput = document.getElementById('statusCode');
-                const headersTextarea = document.getElementById('headers');
-                const queryParamsContainer = document.getElementById('query-params-container');
-                const addQueryParamButton = document.getElementById('add-query-param');
-                const bodyTypeSelect = document.getElementById('bodyType');
-                const rawBodyTextarea = document.getElementById('rawBody');
-                const bodyRawContainer = document.getElementById('body-raw-container');
-                const intervalUnitSelect = document.getElementById('intervalUnit');
-                const authTypeSelect = document.getElementById('authType');
-                const methodColorMap = {
-                    'GET': '#6bdd9a',
-                    'POST': '#ffe47e',
-                    'PUT': '#74aef6',
-                    'DELETE': '#f79a8e',
-                    'PATCH': '#c0a8e1',
-                    'OPTIONS': '#f15eb0',
-                    'HEAD': '#6bdd9a'
-                };
-
-                function updateMethodSelectColor() {
-                    const selectedMethod = methodSelect.value;
-                    // Use a fallback to the default text color if something goes wrong
-                    methodSelect.style.color = methodColorMap[selectedMethod] || 'var(--vscode-input-foreground)';
-                }
-
-                methodSelect.addEventListener('change', updateMethodSelectColor);
-                // Set initial color on load
-                updateMethodSelectColor();
-
-                // --- Tab Switching Logic ---
-                const tabButtons = document.querySelectorAll('.tab-button');
-                const tabContents = document.querySelectorAll('.tab-content');
-
-                function switchTab(tabId) {
-                    tabButtons.forEach(button => button.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
-
-                    document.querySelector(\`[data-tab="\${tabId}"]\`).classList.add('active');
-                    document.getElementById(\`tab-\${tabId}\`).classList.add('active');
-                }
-
-                tabButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        switchTab(button.dataset.tab);
-                    });
-                });
-
-                // Initial tab display (e.g., Parameters tab active by default)
-                switchTab('params');
-
-                // --- Query Parameters (Key-Value) Logic ---
-                function createQueryParamRow(key = '', value = '') {
-                    const row = document.createElement('div');
-                    row.classList.add('key-value-row');
-                    row.innerHTML = \`
-                        <input type="text" class="query-param-key" value="\${key}" placeholder="Key">
-                        <input type="text" class="query-param-value" value="\${value}" placeholder="Value">
-                        <button type="button" class="remove-button secondary small-button">X</button>
-                    \`;
-                    row.querySelector('.remove-button').addEventListener('click', () => row.remove());
-                    return row;
-                }
-
-                addQueryParamButton.addEventListener('click', () => {
-                    queryParamsContainer.appendChild(createQueryParamRow());
-                });
-
-                // Populate existing query params on load
-                const initialQueryParams = ${JSON.stringify(queryParams)};
-                initialQueryParams.forEach(param => {
-                    queryParamsContainer.appendChild(createQueryParamRow(param.key, param.value));
-                });
-
-                // --- Body Type Logic ---
-                function switchBodyView(bodyType) {
-                    bodyRawContainer.style.display = (bodyType === 'raw') ? 'block' : 'none';
-                    // Add logic for other body types if implemented
-                }
-
-                bodyTypeSelect.addEventListener('change', (e) => {
-                    switchBodyView(e.target.value);
-                });
-
-                // --- Authorization UI Logic ---
-                function switchAuthView(authType) {
-                    // Hide all auth-specific field containers
-                    document.querySelectorAll('.auth-fields').forEach(el => el.style.display = 'none');
-                    // Show the selected one
-                    const selectedAuthContainer = document.getElementById('auth-' + authType);
-                    if (selectedAuthContainer) {
-                        selectedAuthContainer.style.display = 'block';
-                    }
-                }
-
-                authTypeSelect.addEventListener('change', (e) => {
-                    switchAuthView(e.target.value);
-                });
-
-                // Set initial view on load
-                switchAuthView(authTypeSelect.value);
-
-                // Set initial body view on load
-                switchBodyView(bodyTypeSelect.value);
-                
-                document.getElementById('cancel').addEventListener('click', () => {
-                    vscode.postMessage({ command: 'cancel' });
-                });
-                
-                document.getElementById('save').addEventListener('click', () => {
-                    const name = nameInput.value;
-                    const url = urlInput.value;
-                    const trimmedUrl = url.trim();
-                    
-                    if (!name.trim()) {
-                        vscode.postMessage({ command: 'showError', message: 'Item Name is required.' });
-                        nameInput.focus();
-                        return;
-                    }
-                    if (!trimmedUrl) {
-                        vscode.postMessage({ command: 'showError', message: 'URL is required.' });
-                        urlInput.focus();
-                        return;
-                    }
-                    try {
-                        // The URL constructor is strict and requires a protocol (e.g. http://).
-                        // This ensures that the URL is well-formed before saving.
-                        new URL(trimmedUrl);
-                    } catch (e) {
-                        // Provide a more useful error message if the protocol is missing.
-                        vscode.postMessage({ command: 'showError', message: 'Invalid URL. Please include the protocol (e.g. http:// or https://).' });
-                        urlInput.focus();
-                        return;
-                    }
-                    const intervalValueStr = intervalValueInput.value;
-                    const selectedUnit = intervalUnitSelect.value;
-                    const numInterval = parseInt(intervalValueStr);
-                    if (isNaN(numInterval) || numInterval < 1) {
-                      vscode.postMessage({ command: 'showError', message: 'Check Interval must be a positive number (at least 1).' });
-                      intervalValueInput.focus();
-                      return;
-                    }
-                    let intervalInSecondsClientCheck = numInterval;
-                    if (selectedUnit === 'minutes') {
-                      intervalInSecondsClientCheck = numInterval * 60;
-                    } else if (selectedUnit === 'hours') {
-                      intervalInSecondsClientCheck = numInterval * 3600;
-                    }
-                    const MIN_INTERVAL_SECONDS = 5; // This should match the backend constant
-                    if (intervalInSecondsClientCheck < MIN_INTERVAL_SECONDS) {
-                      vscode.postMessage({ 
-                        command: 'showError', 
-                        message: 'Check interval is too short. Minimum is ' + MIN_INTERVAL_SECONDS + ' seconds. You entered ' + numInterval + ' ' + selectedUnit + ' (' + intervalInSecondsClientCheck + 's).'
-                      });
-                      intervalValueInput.focus();
-                      return;
-                    }
-                    let headers = undefined;
-                    const headersString = headersTextarea.value.trim();
-                    if (headersString) {
-                      try {
-                        headers = JSON.parse(headersString);
-                            if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
-                                throw new Error('Headers must be a JSON object.');
-                            }
-                        } catch (e) {
-                            vscode.postMessage({ command: 'showError', message: 'Invalid JSON format for Headers. ' + (e instanceof Error ? e.message : String(e)) });
-                            headersTextarea.focus();
-                            return;
-                        }
-                    }
-
-                    // --- Query Parameters Data Collection ---
-                    const queryParams = [];
-                    document.querySelectorAll('#query-params-container .key-value-row').forEach(row => {
-                        const keyInput = row.querySelector('.query-param-key');
-                        const valueInput = row.querySelector('.query-param-value');
-                        if (keyInput && valueInput) {
-                            const key = keyInput.value.trim();
-                            const value = valueInput.value.trim();
-                            if (key || value) { // Only add if key or value is present
-                                queryParams.push({ key, value });
-                            }
-                        }
-                    });
-
-                    // --- Body Data Collection ---
-                    const bodyType = bodyTypeSelect.value;
-                    let bodyData = { type: bodyType };
-                    if (bodyType === 'raw') {
-                        bodyData.content = rawBodyTextarea.value;
-                    }
-                    // --- Authorization Data Collection ---
-                    const authType = authTypeSelect.value;
-                    let authData = { type: authType };
-                    if (authType === 'basic') {
-                        authData.username = document.getElementById('basicUsername').value.trim();
-                        authData.password = document.getElementById('basicPassword').value;
-                    } else if (authType === 'apikey') {
-                        authData.key = document.getElementById('apiKeyKey').value.trim();
-                        authData.value = document.getElementById('apiKeyValue').value.trim();
-                        authData.addTo = document.getElementById('apiKeyAddTo').value;
-                    } else if (authType === 'bearer') {
-                        authData.token = document.getElementById('bearerToken').value.trim();
-                    } else if (authType === 'oauth2') {
-                        authData.token = document.getElementById('oauth2Token').value.trim();
-                        authData.headerPrefix = document.getElementById('oauth2HeaderPrefix').value.trim() || 'Bearer';
-                    }
-                    // For other types, only the 'type' is saved for now.
-                    
-                    const data = {
-                        name: name.trim(),
-                        url: trimmedUrl,
-                        method: methodSelect.value,
-                        intervalValue: numInterval.toString(),
-                        intervalUnit: selectedUnit,
-                        expectedStatusCode: parseInt(statusCodeInput.value) || 200,
-                        headers: headers, // Already collected
-                        queryParams: queryParams, // New
-                        auth: authData, // Already collected
-                        body: bodyData
-                    };
-                                            
-                    vscode.postMessage({
-                        command: 'save',
-                        data: data
-                    });
-                });
-            }());
+            ${webviewScriptContent}
         </script>
       </body>
       </html>
@@ -795,16 +854,13 @@ export class AddEditView {
   public restoreWebview(webviewPanel: vscode.WebviewPanel, state?: any) {
     this.panel = webviewPanel;
     this.currentItemForForm = state?.itemForForm || createDefaultUrlItem();
-    // When restoring, ensure the correct item data is used to generate HTML
     this.panel.webview.html = this.getFormHtml(this.currentItemForForm);
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
       this.currentItemForForm = undefined;
-      if (this.resolvePromise) {
-        this.resolvePromise(undefined);
-        this.resolvePromise = undefined;
-      }
+      this.resolvePromise?.(undefined);
+      this.resolvePromise = undefined;
     }, null, this.context.subscriptions);
 
     this.panel.webview.onDidReceiveMessage(

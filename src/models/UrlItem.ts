@@ -29,7 +29,7 @@ export interface OAuth2Auth {
 }
 
 // Placeholder interfaces for complex auth types. Their fields can be added later.
-export interface AwsV4Auth { type: 'awsv4'; accessKey?: string; secretKey?: string; region?: string; service?: string; sessionToken?: string; }
+export interface AwsV4Auth { type: 'awsv4'; accessKey?: string; secretKey?: string; service?: string; sessionToken?: string; }
 export interface OAuth1Auth { type: 'oauth1'; consumerKey?: string; consumerSecret?: string; token?: string; tokenSecret?: string; }
 
 // A union type for all possible authentication configurations.

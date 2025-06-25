@@ -13,7 +13,7 @@ export class ListView {
     private context: vscode.ExtensionContext,
     private storageService: StorageService,
     private addEditView: AddEditView,
-    private monitorService: MonitorService // Added MonitorService
+    private monitorService: MonitorService
   ) {
     this.treeDataProvider = new UrlTreeDataProvider(storageService);
     this.treeView = vscode.window.createTreeView('urlMonitor.list', {
@@ -27,7 +27,7 @@ export class ListView {
   private registerCommands() {
     this.context.subscriptions.push(
       vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem()),
-      vscode.commands.registerCommand('urlMonitor.editItem', (item: UrlItem) => this.editItem(item)),
+      vscode.commands.registerCommand('urlMonitor.editItem', (itemId: string) => this.editItem(itemId)),
       vscode.commands.registerCommand('urlMonitor.deleteItem', (item: UrlItem) => this.deleteItem(item)),
       vscode.commands.registerCommand('urlMonitor.refreshList', async () => {
         await vscode.window.withProgress({
@@ -37,9 +37,8 @@ export class ListView {
         }, async (progress) => {
           progress.report({ increment: 0, message: 'Fetching all URLs...' });
           await this.monitorService.forceCheckAllItems();
-          this.refresh(); // Refresh the TreeView after all checks
+          this.refresh();
           progress.report({ increment: 100, message: 'Done.' });
-          // Short delay for notification to disappear, if desired
           await new Promise(resolve => setTimeout(resolve, 1500));
         });
       })
@@ -51,9 +50,7 @@ export class ListView {
       const newItemData = await this.addEditView.showAddForm();
       if (newItemData) {
         const addedItem = await this.storageService.addItem(newItemData);
-        // Check status immediately
         await this.monitorService.checkItemImmediately(addedItem);
-        // Restart/adjust the monitoring cycle to include the new item
         await this.monitorService.startMonitoring();
         this.refresh();
         vscode.window.showInformationMessage(`"${addedItem.name}" added. Initial status checked.`);
@@ -63,14 +60,18 @@ export class ListView {
     }
   }
 
-  public async editItem(item: UrlItem) {
+  public async editItem(itemId: string) {
     try {
+      const item = (await this.storageService.getItems()).find(i => i.id === itemId);
+      if (!item) {
+        vscode.window.showErrorMessage('Item not found for editing.');
+        return;
+      }
+
       const updatedItemData = await this.addEditView.showEditForm(item);
       if (updatedItemData) {
         await this.storageService.updateItem(updatedItemData);
-        // Check status immediately after editing
         await this.monitorService.checkItemImmediately(updatedItemData);
-        // Reset/adjust the monitoring cycle for the edited item
         await this.monitorService.startMonitoring();
         this.refresh();
         vscode.window.showInformationMessage(`"${updatedItemData.name}" updated. Status re-checked.`);
@@ -90,7 +91,6 @@ export class ListView {
     if (confirm === 'Delete') {
       try {
         await this.storageService.deleteItem(item.id);
-        // Reinicia o monitoramento para remover o item do ciclo
         await this.monitorService.startMonitoring();
         this.refresh();
         vscode.window.showInformationMessage(`"${item.name}" deleted successfully.`);
@@ -104,10 +104,6 @@ export class ListView {
     this.treeDataProvider.refresh();
   }
 
-  /**
-   * Updates the badge on the activity bar icon with the count of errored URLs.
-   * @param errorCount The number of items with errors.
-   */
   public updateBadge(errorCount: number) {
     this.treeView.badge = errorCount > 0
       ? { value: errorCount, tooltip: `${errorCount} URL(s) with errors` }
