@@ -145,7 +145,8 @@ export class AddEditView {
         const methodSelect = document.getElementById('method');
         const intervalValueInput = document.getElementById('intervalValue');
         const statusCodeInput = document.getElementById('statusCode');
-        const headersTextarea = document.getElementById('headers');
+        const headersContainer = document.getElementById('headers-container');
+        const addHeaderButton = document.getElementById('add-header');
         const queryParamsContainer = document.getElementById('query-params-container');
         const addQueryParamButton = document.getElementById('add-query-param');
         const bodyTypeSelect = document.getElementById('bodyType');
@@ -274,15 +275,62 @@ export class AddEditView {
           updateUrlFromParams();
         });
 
+        // --- Headers Tab Logic ---
+        function createHeaderRow(key = '', value = '') {
+          const row = document.createElement('div');
+          row.classList.add('key-value-row');
+
+          const keyInput = document.createElement('input');
+          keyInput.type = 'text';
+          keyInput.className = 'header-key';
+          keyInput.value = key;
+          keyInput.placeholder = 'Key';
+          keyInput.setAttribute('list', 'header-suggestions');
+          row.appendChild(keyInput);
+
+          const valueInput = document.createElement('input');
+          valueInput.type = 'text';
+          valueInput.className = 'header-value';
+          valueInput.value = value;
+          valueInput.placeholder = 'Value';
+          row.appendChild(valueInput);
+
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'remove-button secondary small-button';
+          removeButton.textContent = 'X';
+          row.appendChild(removeButton);
+          
+          return row;
+        }
+
+        addHeaderButton.addEventListener('click', () => {
+          headersContainer.appendChild(createHeaderRow());
+        });
+
+        headersContainer.addEventListener('click', (event) => {
+          if (event.target && event.target.classList.contains('remove-button')) {
+            event.target.closest('.key-value-row')?.remove();
+          }
+        });
+
         // These values are injected from the outer TypeScript template, so they need to be stringified.
         const initialQueryParams = ${JSON.stringify(queryParams)};
         const initialUrl = ${JSON.stringify(itemToRender.url || '')};
+        const initialHeaders = ${JSON.stringify(itemToRender.headers || {})};
 
         urlInput.value = initialUrl;
         initialQueryParams.forEach(param => {
           queryParamsContainer.appendChild(createQueryParamRow(param.key, param.value));
         });
         updateUrlFromParams();
+
+        // Populate initial headers
+        for (const key in initialHeaders) {
+          if (Object.prototype.hasOwnProperty.call(initialHeaders, key)) {
+            headersContainer.appendChild(createHeaderRow(key, initialHeaders[key]));
+          }
+        }
 
         function switchBodyView(bodyType) {
           bodyRawContainer.style.display = (bodyType === 'raw') ? 'block' : 'none';
@@ -356,20 +404,19 @@ export class AddEditView {
             intervalValueInput.focus();
             return;
           }
-          let headers = undefined;
-          const headersString = headersTextarea.value.trim();
-          if (headersString) {
-            try {
-              headers = JSON.parse(headersString);
-              if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
-                throw new Error('Headers must be a JSON object.');
+          
+          const headers = {};
+          headersContainer.querySelectorAll('.key-value-row').forEach(row => {
+            const keyInput = row.querySelector('.header-key');
+            const valueInput = row.querySelector('.header-value');
+            if (keyInput && valueInput) {
+              const key = keyInput.value.trim();
+              const value = valueInput.value.trim();
+              if (key) {
+                headers[key] = value;
               }
-            } catch (e) {
-              vscode.postMessage({ command: 'showError', message: 'Invalid JSON format for Headers. ' + (e instanceof Error ? e.message : String(e)) });
-              headersTextarea.focus();
-              return;
             }
-          }
+          });
 
           const queryParams = [];
           document.querySelectorAll('#query-params-container .key-value-row').forEach(row => {
@@ -424,7 +471,7 @@ export class AddEditView {
               intervalValue: numInterval.toString(),
               intervalUnit: selectedUnit,
               expectedStatusCode: parseInt(statusCodeInput.value) || 200,
-              headers: headers,
+              headers: Object.keys(headers).length > 0 ? headers : undefined,
               queryParams: queryParams,
               auth: authData,
               body: bodyData
@@ -529,7 +576,7 @@ export class AddEditView {
               input[type="number"],
               input[type="password"],
               select,
-              textarea {
+              textarea{
                   width: 100%;
                   padding: 6px;
                   box-sizing: border-box;
@@ -815,10 +862,11 @@ export class AddEditView {
                 </div>
 
                 <div id="tab-headers" class="tab-content">
-                    <div class="form-group">
-                        <label for="headers">Headers (JSON format)</label>
-                        <textarea id="headers" placeholder='${'{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer YOUR_TOKEN"\n}'}'>${itemToRender.headers ? JSON.stringify(itemToRender.headers, null, 2) : ''}</textarea>
+                    <h4>Headers</h4>
+                    <div id="headers-container">
+                        <!-- Dynamic rows for key-value pairs -->
                     </div>
+                    <button type="button" id="add-header" class="secondary small-button">Add Header</button>
                 </div>
 
                 <div id="tab-body" class="tab-content">
@@ -844,6 +892,39 @@ export class AddEditView {
         <script nonce="${nonce}">
             ${webviewScriptContent}
         </script>
+        <datalist id="header-suggestions">
+            <option value="A-IM"></option>
+            <option value="Accept"></option>
+            <option value="Accept-Charset"></option>
+            <option value="Accept-Encoding"></option>
+            <option value="Accept-Language"></option>
+            <option value="Access-Control-Request-Method"></option>
+            <option value="Access-Control-Request-Headers"></option>
+            <option value="Authorization"></option>
+            <option value="Cache-Control"></option>
+            <option value="Connection"></option>
+            <option value="Content-Length"></option>
+            <option value="Content-Type"></option>
+            <option value="Cookie"></option>
+            <option value="Date"></option>
+            <option value="DNT"></option>
+            <option value="Expect"></option>
+            <option value="Forwarded"></option>
+            <option value="From"></option>
+            <option value="Host"></option>
+            <option value="If-Match"></option>
+            <option value="If-Modified-Since"></option>
+            <option value="If-None-Match"></option>
+            <option value="If-Unmodified-Since"></option>
+            <option value="Origin"></option>
+            <option value="Pragma"></option>
+            <option value="Referer"></option>
+            <option value="User-Agent"></option>
+            <option value="Upgrade-Insecure-Requests"></option>
+            <option value="X-Requested-With"></option>
+            <option value="X-Forwarded-For"></option>
+            <option value="X-Forwarded-Proto"></option>
+        </datalist>
       </body>
       </html>
       `;
