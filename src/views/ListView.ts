@@ -174,7 +174,7 @@ export class ListView {
             }
 
             await vscode.env.clipboard.writeText(curlCommand);
-            vscode.window.showInformationMessage(`cURL command for "${item.name}" copied to clipboard!`);
+            vscode.window.showInformationMessage(`cURL command copied to clipboard: "${item.name}"`);
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to copy cURL command: ${error instanceof Error ? error.message : String(error)}`);
         }

@@ -49,7 +49,7 @@ export class ImportCurlCommand {
             await this.monitorService.checkItemImmediately(addedItem);
             await this.monitorService.startMonitoring(); // Restart monitoring to include the new item
 
-            vscode.window.showInformationMessage(`Successfully imported "${addedItem.name}" from cURL.`);
+            vscode.window.showInformationMessage(`Successfully imported from cURL: "${addedItem.name}"`);
             return true;
 
         } catch (error) {

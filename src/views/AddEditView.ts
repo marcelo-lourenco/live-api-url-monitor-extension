@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { UrlItem, createDefaultUrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
+import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
 
 export class AddEditView {
     private panel: vscode.WebviewPanel | undefined;

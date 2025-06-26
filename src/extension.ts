@@ -7,10 +7,12 @@ import { ImportItemsCommand } from './commands/importItems';
 import { AddEditView } from './views/AddEditView';
 import { ImportCurlCommand } from './commands/importCurl';
 
+let monitorService: MonitorService;
+
 export async function activate(context: vscode.ExtensionContext) { // Marcado como async
     // Initialize services
     const storageService = new StorageService(context.globalState);
-    const monitorService = new MonitorService(storageService);
+    monitorService = new MonitorService(storageService);
     const addEditView = new AddEditView(context);
     // Passa monitorService para ListView
     const exportItemsCommand = new ExportItemsCommand(storageService);
@@ -21,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     // Register webview panel serializer
     context.subscriptions.push(
         vscode.window.registerWebviewPanelSerializer('urlMonitor.addEdit', {
-            async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, state: any) {
+            async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, _state: any) {
                 // O 'state' pode ser usado se você salvar o estado do webview
                 // Aqui, estamos apenas restaurando a visualização.
                 addEditView.restoreWebview(webviewPanel);
@@ -84,10 +86,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
 }
 
 export function deactivate() {
-    // Aqui você pode adicionar lógicas para parar o monitoramento se necessário,
-    // embora o VS Code geralmente lide bem com a finalização de extensões.
-    // Exemplo:
-    // const storageService = new StorageService(context.globalState); // Precisaria do context ou de outra forma de acesso
-    // const monitorService = new MonitorService(storageService);
-    // monitorService.stopMonitoring();
+    if (monitorService) {
+        monitorService.stopMonitoring();
+    }
 }

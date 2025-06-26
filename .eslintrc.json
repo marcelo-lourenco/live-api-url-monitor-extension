@@ -17,7 +17,12 @@
                 "argsIgnorePattern": "^_"
             }
         ],
-        "no-console": "warn",
+        "no-console": [
+            "warn",
+            {
+                "allow": ["warn", "error"]
+            }
+        ],
         "semi": [
             "error",
             "always"
@@ -33,5 +38,13 @@
     "env": {
         "node": true,
         "es6": true
-    }
+    },
+    "overrides": [
+        {
+            "files": ["webpack.config.js"],
+            "rules": {
+                "@typescript-eslint/no-var-requires": "off"
+            }
+        }
+    ]
 }

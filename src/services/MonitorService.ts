@@ -13,15 +13,20 @@ export class MonitorService {
 
     private async performCheckLogic(item: UrlItem): Promise<'up' | 'down'> {
         try {
+            const headers = item.headers || {};
             const config: AxiosRequestConfig = {
                 method: item.method,
                 url: item.url,
-                headers: { ...item.headers },
+                headers: headers,
                 timeout: 10000
             };
 
+            if (!config.url) {
+                return 'down';
+            }
+
             if (item.queryParams && item.queryParams.length > 0) {
-                const url = new URL(config.url!);
+                const url = new URL(config.url);
                 item.queryParams.forEach(param => {
                     if (param.key) {
                         url.searchParams.append(param.key, param.value);
@@ -33,12 +38,12 @@ export class MonitorService {
             if (item.body) {
                 if (item.body.type === 'raw' && item.body.content) {
                     config.data = item.body.content;
-                    if (!config.headers!['Content-Type']) {
+                    if (!headers['Content-Type']) {
                         try {
                             JSON.parse(item.body.content);
-                            config.headers!['Content-Type'] = 'application/json';
+                            headers['Content-Type'] = 'application/json';
                         } catch {
-                            config.headers!['Content-Type'] = 'text/plain';
+                            headers['Content-Type'] = 'text/plain';
                         }
                     }
                 }
@@ -56,15 +61,15 @@ export class MonitorService {
                     break;
                 case 'bearer':
                     if (auth.token) {
-                        config.headers!['Authorization'] = `Bearer ${auth.token}`;
+                        headers['Authorization'] = `Bearer ${auth.token}`;
                     }
                     break;
                 case 'apikey':
                     if (auth.key && auth.value) {
-                        if (auth.addTo === 'header') {
-                            config.headers![auth.key] = auth.value;
+                        if (auth.addTo === 'header') { // This line was not flagged, but also uses '!'
+                            headers[auth.key] = auth.value;
                         } else {
-                            const url = new URL(config.url!);
+                            const url = new URL(config.url);
                             url.searchParams.append(auth.key, auth.value);
                             config.url = url.toString();
                         }

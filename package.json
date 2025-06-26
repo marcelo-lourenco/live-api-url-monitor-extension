@@ -23,13 +23,6 @@
         "endpoint",
         "developer tool"
     ],
-    "activationEvents": [
-        "onView:urlMonitor.list",
-        "onCommand:urlMonitor.addItem",
-        "onCommand:urlMonitor.editItem",
-        "onCommand:urlMonitor.refreshList",
-        "onCommand:urlMonitor.importCurl"
-    ],
     "main": "./dist/extension.js",
     "contributes": {
         "commands": [
@@ -88,7 +81,8 @@
                 {
                     "id": "urlMonitor.list",
                     "name": "URL Monitor",
-                    "contextualTitle": "URL Monitor"
+                    "contextualTitle": "URL Monitor",
+                    "icon": "resources/monitor.png"
                 }
             ]
         },
