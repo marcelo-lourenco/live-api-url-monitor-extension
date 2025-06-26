@@ -3,9 +3,7 @@
         "module": "commonjs",
         "target": "ES2020",
         "outDir": "out",
-        "lib": [
-            "ES2020"
-        ],
+        "lib": ["es2020"],
         "sourceMap": true,
         "rootDir": "src",
         "strict": true,
@@ -20,7 +18,11 @@
             "glob"
         ]
     },
+    "include": [
+        "src/**/*.ts"
+    ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "src/views/webview"
     ]
 }
