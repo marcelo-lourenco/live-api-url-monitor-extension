@@ -97,27 +97,27 @@
         {
           "command": "urlMonitor.addItem",
           "when": "view == urlMonitor.list",
-          "group": "navigation"
-        },
-        {
-          "command": "urlMonitor.importCurl",
-          "when": "view == urlMonitor.list",
-          "group": "navigation"
-        },
-        {
-          "command": "urlMonitor.refreshList",
-          "when": "view == urlMonitor.list",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "urlMonitor.exportItems",
           "when": "view == urlMonitor.list",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "urlMonitor.importItems",
           "when": "view == urlMonitor.list",
-          "group": "navigation"
+          "group": "navigation@3"
+        },
+        {
+          "command": "urlMonitor.importCurl",
+          "when": "view == urlMonitor.list",
+          "group": "navigation@4"
+        },
+        {
+          "command": "urlMonitor.refreshList",
+          "when": "view == urlMonitor.list",
+          "group": "navigation@5"
         }
       ],
       "view/item/context": [
