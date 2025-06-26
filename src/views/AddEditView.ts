@@ -2,141 +2,141 @@ import * as vscode from 'vscode';
 import { UrlItem, createDefaultUrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
 
 export class AddEditView {
-  private panel: vscode.WebviewPanel | undefined;
-  private resolvePromise: ((value: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined) => void) | undefined;
-  private currentItemForForm: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined;
+    private panel: vscode.WebviewPanel | undefined;
+    private resolvePromise: ((value: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined) => void) | undefined;
+    private currentItemForForm: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined;
 
-  constructor(private context: vscode.ExtensionContext) { }
+    constructor(private context: vscode.ExtensionContext) { }
 
-  public async showAddForm(): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
-    this.currentItemForForm = createDefaultUrlItem();
-    this.currentItemForForm.interval = 60;
-    return this.showForm('Add URL Item', this.currentItemForForm);
-  }
-
-  public async showEditForm(item: UrlItem): Promise<UrlItem | undefined> {
-    const itemToEdit = { ...item };
-
-    if ((itemToEdit as any).username) {
-      itemToEdit.auth = {
-        type: 'basic',
-        username: (itemToEdit as any).username,
-        password: (itemToEdit as any).password || ''
-      };
-      delete (itemToEdit as any).username;
-      delete (itemToEdit as any).password;
-    } else if (!itemToEdit.auth) {
-      itemToEdit.auth = { type: 'noauth' };
+    public async showAddForm(): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
+        this.currentItemForForm = createDefaultUrlItem();
+        this.currentItemForForm.interval = 60;
+        return this.showForm('Add URL Item', this.currentItemForForm);
     }
 
-    this.currentItemForForm = itemToEdit;
-    return this.showForm('Edit URL Item', this.currentItemForForm);
-  }
+    public async showEditForm(item: UrlItem): Promise<UrlItem | undefined> {
+        const itemToEdit = { ...item };
 
-  private async showForm(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): Promise<any> {
-    return new Promise((resolve) => {
-      this.resolvePromise = resolve;
-      this.createOrShowPanel(title, itemData || this.currentItemForForm);
-    });
-  }
-
-  private createOrShowPanel(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) {
-    const column = vscode.window.activeTextEditor?.viewColumn;
-
-    if (this.panel) {
-      this.panel.title = title;
-      this.panel.webview.html = this.getFormHtml(itemData);
-      this.panel.reveal(column);
-    } else {
-      this.panel = vscode.window.createWebviewPanel(
-        'urlMonitor.addEdit',
-        title,
-        column || vscode.ViewColumn.One,
-        {
-          enableScripts: true,
-          retainContextWhenHidden: true,
-          localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+        if ((itemToEdit as any).username) {
+            itemToEdit.auth = {
+                type: 'basic',
+                username: (itemToEdit as any).username,
+                password: (itemToEdit as any).password || ''
+            };
+            delete (itemToEdit as any).username;
+            delete (itemToEdit as any).password;
+        } else if (!itemToEdit.auth) {
+            itemToEdit.auth = { type: 'noauth' };
         }
-      );
 
-      this.panel.webview.html = this.getFormHtml(itemData);
-
-      this.panel.onDidDispose(() => {
-        this.panel = undefined;
-        this.currentItemForForm = undefined;
-        this.resolvePromise?.(undefined);
-        this.resolvePromise = undefined;
-      }, null, this.context.subscriptions);
-
-      this.panel.webview.onDidReceiveMessage(
-        message => this.handleMessage(message),
-        undefined,
-        this.context.subscriptions
-      );
+        this.currentItemForForm = itemToEdit;
+        return this.showForm('Edit URL Item', this.currentItemForForm);
     }
-  }
 
-  private handleMessage(message: any) {
-    switch (message.command) {
-      case 'save':
-        if (this.resolvePromise) {
-          const dataToSave = message.data;
+    private async showForm(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): Promise<any> {
+        return new Promise((resolve) => {
+            this.resolvePromise = resolve;
+            this.createOrShowPanel(title, itemData || this.currentItemForForm);
+        });
+    }
 
-          const rawIntervalInput = parseInt(dataToSave.intervalValue);
-          if (isNaN(rawIntervalInput) || rawIntervalInput < 1) return;
+    private createOrShowPanel(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) {
+        const column = vscode.window.activeTextEditor?.viewColumn;
 
-          let intervalInSeconds = rawIntervalInput;
-          if (dataToSave.intervalUnit === 'minutes') intervalInSeconds = rawIntervalInput * 60;
+        if (this.panel) {
+            this.panel.title = title;
+            this.panel.webview.html = this.getFormHtml(itemData);
+            this.panel.reveal(column);
+        } else {
+            this.panel = vscode.window.createWebviewPanel(
+                'urlMonitor.addEdit',
+                title,
+                column || vscode.ViewColumn.One,
+                {
+                    enableScripts: true,
+                    retainContextWhenHidden: true,
+                    localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+                }
+            );
 
-          const MIN_INTERVAL_SECONDS = 5;
-          if (intervalInSeconds < MIN_INTERVAL_SECONDS) return;
+            this.panel.webview.html = this.getFormHtml(itemData);
 
-          const finalData: any = {
-            name: dataToSave.name,
-            url: (() => {
-              try {
-                const urlObject = new URL(dataToSave.url);
-                return urlObject.origin + urlObject.pathname;
-              } catch {
-                return dataToSave.url.split('?')[0];
-              }
-            })(),
-            method: dataToSave.method,
-            interval: intervalInSeconds,
-            expectedStatusCode: dataToSave.expectedStatusCode,
-            headers: dataToSave.headers,
-            queryParams: dataToSave.queryParams,
-            auth: dataToSave.auth,
-            body: dataToSave.body,
-          };
+            this.panel.onDidDispose(() => {
+                this.panel = undefined;
+                this.currentItemForForm = undefined;
+                this.resolvePromise?.(undefined);
+                this.resolvePromise = undefined;
+            }, null, this.context.subscriptions);
 
-          if (this.currentItemForForm && 'id' in this.currentItemForForm) {
-            finalData.id = (this.currentItemForForm as UrlItem).id;
-          }
-
-          this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
-          this.resolvePromise = undefined;
-          this.panel?.dispose();
+            this.panel.webview.onDidReceiveMessage(
+                message => this.handleMessage(message),
+                undefined,
+                this.context.subscriptions
+            );
         }
-        break;
-      case 'cancel':
-        this.resolvePromise?.(undefined);
-        this.resolvePromise = undefined;
-        this.panel?.dispose();
-        break;
-      case 'showError':
-        vscode.window.showErrorMessage(message.message);
-        break;
-      default:
-        // vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`); // Removed debug message
-        break;
     }
-  }
 
-  private getWebviewScript(itemToRender: any, queryParams: any): string {
-    // IMPORTANT: This entire string must be valid JavaScript. No TypeScript syntax (like 'as Type')
-    // or unescaped template literals (backticks) that could conflict with the outer HTML template.
-    return `
+    private handleMessage(message: any) {
+        switch (message.command) {
+            case 'save':
+                if (this.resolvePromise) {
+                    const dataToSave = message.data;
+
+                    const rawIntervalInput = parseInt(dataToSave.intervalValue);
+                    if (isNaN(rawIntervalInput) || rawIntervalInput < 1) return;
+
+                    let intervalInSeconds = rawIntervalInput;
+                    if (dataToSave.intervalUnit === 'minutes') intervalInSeconds = rawIntervalInput * 60;
+
+                    const MIN_INTERVAL_SECONDS = 5;
+                    if (intervalInSeconds < MIN_INTERVAL_SECONDS) return;
+
+                    const finalData: any = {
+                        name: dataToSave.name,
+                        url: (() => {
+                            try {
+                                const urlObject = new URL(dataToSave.url);
+                                return urlObject.origin + urlObject.pathname;
+                            } catch {
+                                return dataToSave.url.split('?')[0];
+                            }
+                        })(),
+                        method: dataToSave.method,
+                        interval: intervalInSeconds,
+                        expectedStatusCode: dataToSave.expectedStatusCode,
+                        headers: dataToSave.headers,
+                        queryParams: dataToSave.queryParams,
+                        auth: dataToSave.auth,
+                        body: dataToSave.body,
+                    };
+
+                    if (this.currentItemForForm && 'id' in this.currentItemForForm) {
+                        finalData.id = (this.currentItemForForm as UrlItem).id;
+                    }
+
+                    this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
+                    this.resolvePromise = undefined;
+                    this.panel?.dispose();
+                }
+                break;
+            case 'cancel':
+                this.resolvePromise?.(undefined);
+                this.resolvePromise = undefined;
+                this.panel?.dispose();
+                break;
+            case 'showError':
+                vscode.window.showErrorMessage(message.message);
+                break;
+            default:
+                // vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`); // Removed debug message
+                break;
+        }
+    }
+
+    private getWebviewScript(itemToRender: any, queryParams: any): string {
+        // IMPORTANT: This entire string must be valid JavaScript. No TypeScript syntax (like 'as Type')
+        // or unescaped template literals (backticks) that could conflict with the outer HTML template.
+        return `
       // console.log('Webview script started!'); // Removed debug log
       (function() {
         const vscode = acquireVsCodeApi();
@@ -511,48 +511,48 @@ export class AddEditView {
         });
       }());
     `;
-  }
-
-  private getFormHtml(item?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): string {
-    const itemToRender = item || createDefaultUrlItem();
-    const auth = itemToRender.auth || { type: 'noauth' };
-    const isEditMode = item && 'id' in item;
-    const queryParams = itemToRender.queryParams || [];
-    const body = itemToRender.body || { type: 'none' };
-    const nonce = getNonce();
-
-    let displayIntervalValue: number;
-    let displayIntervalUnit: 'seconds' | 'minutes' | 'hours';
-
-    const currentIntervalInSeconds = itemToRender.interval || 60;
-
-    if (!isEditMode) {
-      if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
-        displayIntervalValue = currentIntervalInSeconds / 60;
-        displayIntervalUnit = 'minutes';
-      } else {
-        displayIntervalValue = currentIntervalInSeconds;
-        displayIntervalUnit = 'seconds';
-      }
-    } else {
-      displayIntervalUnit = 'seconds';
-      if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
-        displayIntervalValue = currentIntervalInSeconds / 60;
-        displayIntervalUnit = 'minutes';
-      } else {
-        displayIntervalValue = currentIntervalInSeconds;
-        displayIntervalUnit = 'seconds';
-      }
-      if (currentIntervalInSeconds % 3600 === 0 && currentIntervalInSeconds >= 3600) {
-        displayIntervalValue = currentIntervalInSeconds / 3600;
-        displayIntervalUnit = 'hours';
-      }
     }
 
-    // Get the pure JavaScript content
-    const webviewScriptContent = this.getWebviewScript(itemToRender, queryParams);
+    private getFormHtml(item?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): string {
+        const itemToRender = item || createDefaultUrlItem();
+        const auth = itemToRender.auth || { type: 'noauth' };
+        const isEditMode = item && 'id' in item;
+        const queryParams = itemToRender.queryParams || [];
+        const body = itemToRender.body || { type: 'none' };
+        const nonce = getNonce();
 
-    return `
+        let displayIntervalValue: number;
+        let displayIntervalUnit: 'seconds' | 'minutes' | 'hours';
+
+        const currentIntervalInSeconds = itemToRender.interval || 60;
+
+        if (!isEditMode) {
+            if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
+                displayIntervalValue = currentIntervalInSeconds / 60;
+                displayIntervalUnit = 'minutes';
+            } else {
+                displayIntervalValue = currentIntervalInSeconds;
+                displayIntervalUnit = 'seconds';
+            }
+        } else {
+            displayIntervalUnit = 'seconds';
+            if (currentIntervalInSeconds % 60 === 0 && currentIntervalInSeconds >= 60) {
+                displayIntervalValue = currentIntervalInSeconds / 60;
+                displayIntervalUnit = 'minutes';
+            } else {
+                displayIntervalValue = currentIntervalInSeconds;
+                displayIntervalUnit = 'seconds';
+            }
+            if (currentIntervalInSeconds % 3600 === 0 && currentIntervalInSeconds >= 3600) {
+                displayIntervalValue = currentIntervalInSeconds / 3600;
+                displayIntervalUnit = 'hours';
+            }
+        }
+
+        // Get the pure JavaScript content
+        const webviewScriptContent = this.getWebviewScript(itemToRender, queryParams);
+
+        return `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -965,40 +965,40 @@ export class AddEditView {
       </body>
       </html>
       `;
-  }
-
-  public restoreWebview(webviewPanel: vscode.WebviewPanel, state?: any) {
-    this.panel = webviewPanel;
-    this.currentItemForForm = state?.itemForForm || createDefaultUrlItem();
-    this.panel.webview.html = this.getFormHtml(this.currentItemForForm);
-
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-      this.currentItemForForm = undefined;
-      this.resolvePromise?.(undefined);
-      this.resolvePromise = undefined;
-    }, null, this.context.subscriptions);
-
-    this.panel.webview.onDidReceiveMessage(
-      message => this.handleMessage(message),
-      undefined,
-      this.context.subscriptions
-    );
-  }
-
-  public persistState(): any {
-    if (this.panel) {
-      return { itemForForm: this.currentItemForForm };
     }
-    return undefined;
-  }
+
+    public restoreWebview(webviewPanel: vscode.WebviewPanel, state?: any) {
+        this.panel = webviewPanel;
+        this.currentItemForForm = state?.itemForForm || createDefaultUrlItem();
+        this.panel.webview.html = this.getFormHtml(this.currentItemForForm);
+
+        this.panel.onDidDispose(() => {
+            this.panel = undefined;
+            this.currentItemForForm = undefined;
+            this.resolvePromise?.(undefined);
+            this.resolvePromise = undefined;
+        }, null, this.context.subscriptions);
+
+        this.panel.webview.onDidReceiveMessage(
+            message => this.handleMessage(message),
+            undefined,
+            this.context.subscriptions
+        );
+    }
+
+    public persistState(): any {
+        if (this.panel) {
+            return { itemForForm: this.currentItemForForm };
+        }
+        return undefined;
+    }
 }
 
 function getNonce() {
-  let text = '';
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }

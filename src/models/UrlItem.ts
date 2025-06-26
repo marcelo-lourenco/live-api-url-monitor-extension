@@ -1,31 +1,31 @@
 export type AuthType = 'noauth' | 'apikey' | 'basic' | 'bearer' | 'oauth2' | 'awsv4' | 'oauth1';
 
 export interface NoAuth {
-  type: 'noauth';
+    type: 'noauth';
 }
 
 export interface ApiKeyAuth {
-  type: 'apikey';
-  key: string;
-  value: string;
-  addTo: 'header' | 'query';
+    type: 'apikey';
+    key: string;
+    value: string;
+    addTo: 'header' | 'query';
 }
 
 export interface BasicAuth {
-  type: 'basic';
-  username: string;
-  password?: string;
+    type: 'basic';
+    username: string;
+    password?: string;
 }
 
 export interface BearerTokenAuth {
-  type: 'bearer';
-  token: string;
+    type: 'bearer';
+    token: string;
 }
 
 export interface OAuth2Auth {
-  type: 'oauth2';
-  token: string;
-  headerPrefix: string;
+    type: 'oauth2';
+    token: string;
+    headerPrefix: string;
 }
 
 // Placeholder interfaces for complex auth types. Their fields can be added later.
@@ -36,50 +36,50 @@ export interface OAuth1Auth { type: 'oauth1'; consumerKey?: string; consumerSecr
 export type AuthConfig = NoAuth | ApiKeyAuth | BasicAuth | BearerTokenAuth | OAuth2Auth | AwsV4Auth | OAuth1Auth;
 
 export interface QueryParam {
-  key: string;
-  value: string;
+    key: string;
+    value: string;
 }
 
 export type BodyType = 'none' | 'raw'; // Add other types as needed (form-data, x-www-form-urlencoded, binary, GraphQL)
 
 export interface NoBody {
-  type: 'none';
+    type: 'none';
 }
 
 export interface RawBody {
-  type: 'raw';
-  content: string;
+    type: 'raw';
+    content: string;
 }
 
 export type RequestBody = NoBody | RawBody;
 
 export interface UrlItem {
-  id: string;
-  name: string;
-  url: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
-  interval: number;
-  expectedStatusCode: number;
-  headers?: Record<string, string>;
-  queryParams?: QueryParam[]; // New: For URL query parameters
-  auth?: AuthConfig;
-  body?: RequestBody; // New: For request body
-  lastStatus?: 'up' | 'down';
-  lastChecked?: string;
+    id: string;
+    name: string;
+    url: string;
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+    interval: number;
+    expectedStatusCode: number;
+    headers?: Record<string, string>;
+    queryParams?: QueryParam[]; // New: For URL query parameters
+    auth?: AuthConfig;
+    body?: RequestBody; // New: For request body
+    lastStatus?: 'up' | 'down';
+    lastChecked?: string;
 }
 
 export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
-  return {
-    name: '',
-    url: '',
-    method: 'GET',
-    interval: 60,
-    expectedStatusCode: 200,
-    headers: {},
-    queryParams: [], // Default to empty array
-    auth: { type: 'noauth' }, // Default to no auth
-    body: { type: 'none' }, // Default to no body
-    lastStatus: undefined,
-    lastChecked: undefined
-  };
+    return {
+        name: '',
+        url: '',
+        method: 'GET',
+        interval: 60,
+        expectedStatusCode: 200,
+        headers: {},
+        queryParams: [], // Default to empty array
+        auth: { type: 'noauth' }, // Default to no auth
+        body: { type: 'none' }, // Default to no body
+        lastStatus: undefined,
+        lastChecked: undefined
+    };
 }
