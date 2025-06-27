@@ -52,6 +52,16 @@
                 "icon": "$(refresh)"
             },
             {
+                "command": "urlMonitor.duplicateItem",
+                "title": "Duplicate Item",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "urlMonitor.duplicateFolder",
+                "title": "Duplicate Folder",
+                "icon": "$(copy)"
+            },
+            {
                 "command": "urlMonitor.editItem",
                 "title": "Edit Item",
                 "icon": "$(edit)"
@@ -192,6 +202,16 @@
                     "group": "3_edit@1"
                 },
                 {
+                    "command": "urlMonitor.duplicateFolder",
+                    "when": "viewItem == 'folder'",
+                    "group": "4_actions@1"
+                },
+                {
+                    "command": "urlMonitor.deleteFolder",
+                    "when": "viewItem == 'folder'",
+                    "group": "9_destructive@1"
+                },
+                {
                     "command": "urlMonitor.deleteFolder",
                     "when": "viewItem == 'folder'",
                     "group": "9_destructive@1"
@@ -207,6 +227,11 @@
                     "command": "urlMonitor.editItem",
                     "when": "viewItem == 'urlItem'",
                     "group": "2_edit@1"
+                },
+                {
+                    "command": "urlMonitor.duplicateItem",
+                    "when": "viewItem == 'urlItem'",
+                    "group": "4_actions@1"
                 },
                 {
                     "command": "urlMonitor.copyAsCurl",

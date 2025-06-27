@@ -17,7 +17,7 @@ export class StorageService {
                 return null; // Filter out invalid entries like null or undefined
             }
 
-            let currentItem = { ...item };
+            const currentItem: any = { ...item };
             let itemChanged = false;
 
             // Migration 1: Old format items without a 'type'
@@ -65,7 +65,7 @@ export class StorageService {
     }
 
     async deleteItem(id: string): Promise<void> {
-        let items = await this.getItems();
+        const items = await this.getItems();
         const idsToDelete = new Set<string>();
         idsToDelete.add(id);
 
@@ -122,6 +122,48 @@ export class StorageService {
     async getAllUrlItems(): Promise<UrlItem[]> {
         const allItems = await this.getItems();
         return allItems.filter(isUrlItem);
+    }
+
+    async duplicateItemOrFolder(sourceId: string): Promise<void> {
+        const allItems = await this.getItems();
+        const sourceItem = allItems.find(i => i.id === sourceId);
+
+        if (!sourceItem) {
+            throw new Error('Source item not found for duplication.');
+        }
+
+        const itemsToAdd: TreeViewItem[] = [];
+        // This map tracks the mapping from old IDs to newly generated IDs.
+        // It's crucial for correctly setting the `parentId` of nested items.
+        const idMap = new Map<string, string>();
+
+        const duplicateRecursively = (originalItem: TreeViewItem, newParentId: string | null) => {
+            const newId = uuidv4();
+            idMap.set(originalItem.id, newId);
+
+            const newItem: TreeViewItem = {
+                ...originalItem,
+                id: newId,
+                name: `Copy of ${originalItem.name}`,
+                parentId: newParentId,
+            };
+
+            if (isUrlItem(newItem)) {
+                newItem.lastStatus = undefined;
+                newItem.lastChecked = undefined;
+            }
+
+            itemsToAdd.push(newItem);
+
+            if (newItem.type === 'folder') {
+                const children = allItems.filter(child => child.parentId === originalItem.id);
+                children.forEach(child => duplicateRecursively(child, newId));
+            }
+        };
+
+        duplicateRecursively(sourceItem, sourceItem.parentId);
+
+        await this.globalState.update(this.storageKey, [...allItems, ...itemsToAdd]);
     }
 
     async getDescendantUrlItems(folderId: string): Promise<UrlItem[]> {
