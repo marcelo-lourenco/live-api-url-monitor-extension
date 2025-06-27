@@ -84,9 +84,12 @@ export class MonitorService {
         }
     }
 
-    private async updateAndNotify(itemId: string, status: 'up' | 'down'): Promise<void> {
-        await this.storageService.updateItemStatus(itemId, status);
-        this.updateErrorStatus();
+    private async processStatusUpdate(item: UrlItem, newStatus: 'up' | 'down'): Promise<void> {
+        // If status changed to 'down', show an immediate error message.
+        if (newStatus === 'down' && item.lastStatus !== 'down') {
+            vscode.window.showErrorMessage(`Monitor Alert: "${item.name}" is down. URL: ${item.url}`);
+        }
+        await this.storageService.updateItemStatus(item.id, newStatus);
     }
 
     public async forceCheckItems(items: UrlItem[]): Promise<void> {
@@ -96,8 +99,7 @@ export class MonitorService {
         // Perform all checks in parallel
         const checkPromises = items.map(async (item) => {
             const status = await this.performCheckLogic(item);
-            // Update status but don't notify yet
-            await this.storageService.updateItemStatus(item.id, status);
+            await this.processStatusUpdate(item, status);
         });
     
         await Promise.all(checkPromises);
@@ -152,7 +154,8 @@ export class MonitorService {
             }
 
             const status = await this.performCheckLogic(currentItem);
-            await this.updateAndNotify(currentItem.id, status);
+            await this.processStatusUpdate(currentItem, status);
+            this.updateErrorStatus();
 
             if (this.timers.has(currentItem.id)) {
                 const newTimeout = setTimeout(checkAndReschedule, currentItem.interval * 1000);
