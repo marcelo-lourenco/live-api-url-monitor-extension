@@ -126,9 +126,9 @@ export class ListView {
     private async duplicate(item: TreeViewItem): Promise<void> {
         try {
             await this.storageService.duplicateItemOrFolder(item.id);
+            vscode.window.showInformationMessage(`Successfully duplicated "${item.name}".`);
             this.refresh();
             await this.monitorService.startMonitoring(); // Ensure new items are monitored
-            vscode.window.showInformationMessage(`Successfully duplicated "${item.name}".`);
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to duplicate: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -176,7 +176,8 @@ export class ListView {
                 const newFolder: Omit<FolderItem, 'id'> = {
                     type: 'folder',
                     name: folderName.trim(),
-                    parentId: parentId
+                    parentId: parentId,
+                    sortOrder: 0 // Placeholder, StorageService will assign the correct value
                 };
                 await this.storageService.addItem(newFolder);
                 this.refresh();

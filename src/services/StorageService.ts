@@ -12,7 +12,7 @@ export class StorageService {
         const items = this.globalState.get<any[]>(this.storageKey, []) || [];
         let needsUpdate = false;
 
-        const migratedItems = items.map(item => {
+        const migratedItems = items.map((item, index) => {
             if (!item || typeof item !== 'object') {
                 return null; // Filter out invalid entries like null or undefined
             }
@@ -31,6 +31,13 @@ export class StorageService {
                 currentItem.parentId = null;
                 itemChanged = true;
             }
+
+            // Migration 3: Items missing a 'sortOrder'
+            if (currentItem.sortOrder === undefined) {
+                currentItem.sortOrder = index; // Use array index for initial order
+                itemChanged = true;
+            }
+
             
             if (itemChanged) {
                 needsUpdate = true;
@@ -48,7 +55,11 @@ export class StorageService {
 
     async addItem(item: Omit<UrlItem, 'id'> | Omit<FolderItem, 'id'>): Promise<TreeViewItem> {
         const items = await this.getItems();
-        const newItem = { ...item, id: uuidv4() } as TreeViewItem;
+        const siblings = items.filter(i => i.parentId === item.parentId);
+        const maxSortOrder = siblings.reduce((max, i) => Math.max(max, i.sortOrder), -1);
+
+        const newItem = { ...item, id: uuidv4(), sortOrder: maxSortOrder + 1 } as TreeViewItem;
+
         items.push(newItem);
         await this.globalState.update(this.storageKey, items);
         return newItem;
@@ -117,6 +128,37 @@ export class StorageService {
             itemToMove.parentId = newParentId;
             await this.globalState.update(this.storageKey, items);
         }
+    }
+
+    async reorderItems(draggedItemId: string, targetItemId: string | null, newParentId: string | null): Promise<void> {
+        const items = await this.getItems();
+        const draggedItem = items.find(i => i.id === draggedItemId);
+        if (!draggedItem) return;
+
+        // Update parent first
+        draggedItem.parentId = newParentId;
+
+        // Get all items in the new parent context (siblings)
+        let siblings = items.filter(i => i.parentId === newParentId).sort((a, b) => a.sortOrder - b.sortOrder);
+
+        // Remove the dragged item from its old position in the sibling list to re-insert it
+        siblings = siblings.filter(i => i.id !== draggedItemId);
+
+        if (targetItemId === null) { // Dropped at the end of the list (or into an empty folder)
+            siblings.push(draggedItem);
+        } else {
+            const targetIndex = siblings.findIndex(i => i.id === targetItemId);
+            if (targetIndex !== -1) {
+                // Insert the dragged item before the target item
+                siblings.splice(targetIndex, 0, draggedItem);
+            } else {
+                siblings.push(draggedItem); // Fallback: add to end
+            }
+        }
+
+        // Re-assign sortOrder based on the new array order
+        siblings.forEach((item, index) => item.sortOrder = index);
+        await this.globalState.update(this.storageKey, items);
     }
 
     async getAllUrlItems(): Promise<UrlItem[]> {

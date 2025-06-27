@@ -73,7 +73,9 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
     async getChildren(element?: TreeViewItem): Promise<TreeViewItem[]> {
         const items = await this.storageService.getItems();
         const parentId = element ? element.id : null;
-        return items.filter(item => item.parentId === parentId);
+        return items
+            .filter(item => item.parentId === parentId)
+            .sort((a, b) => a.sortOrder - b.sortOrder);
     }
 
     async getParent(element: TreeViewItem): Promise<TreeViewItem | null> {
@@ -104,23 +106,35 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
         }
 
         const draggedItems: TreeViewItem[] = transferItem.value;
-        let newParentId: string | null = null;
+        const draggedItem = draggedItems[0]; // We'll handle one-by-one for simplicity in reordering
+        if (!draggedItem) return;
 
-        if (target) {
-            // If dropping on a folder, it becomes the new parent.
-            // If dropping on a url item, its parent becomes the new parent.
-            newParentId = isUrlItem(target) ? target.parentId : target.id;
+        // Determine the drop context
+        const dropTargetParentId = target ? (isUrlItem(target) ? target.parentId : target.id) : null;
+        const isMovingToNewFolder = draggedItem.parentId !== dropTargetParentId;
+
+        if (isMovingToNewFolder) {
+            // This is a simple move to a different parent, not a reorder.
+            // The existing moveItem logic is sufficient.
+            const promises = draggedItems.map(item => {
+                if (item.id === dropTargetParentId) return Promise.resolve(); // Cannot drop folder on itself
+                return this.storageService.moveItem(item.id, dropTargetParentId);
+            });
+            await Promise.all(promises);
+        } else {
+            // This is a reorder within the same parent.
+            // We need to know the target item to place the dragged item *before* it.
+            // If target is undefined, it means we are dropping at the end of the root list.
+            // If target is a folder, we are dropping at the end of that folder's list.
+            const targetId = target ? (isUrlItem(target) ? target.id : null) : null;
+            const parentId = target ? target.parentId : null;
+
+            // We only handle single-item reordering for simplicity
+            if (draggedItems.length === 1) {
+                await this.storageService.reorderItems(draggedItem.id, targetId, parentId);
+            }
         }
 
-        const promises = draggedItems.map(item => {
-            // Do not move if it's dropped on itself or its current parent
-            if (item.id === target?.id || item.parentId === newParentId) {
-                return Promise.resolve();
-            }
-            return this.storageService.moveItem(item.id, newParentId);
-        });
-
-        await Promise.all(promises);
         this.refresh();
     }
 }

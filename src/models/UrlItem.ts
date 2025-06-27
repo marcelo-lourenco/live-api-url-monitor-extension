@@ -67,6 +67,7 @@ export interface UrlItem {
     body?: RequestBody; // New: For request body
     lastStatus?: 'up' | 'down';
     lastChecked?: string;
+    sortOrder: number;
     parentId: string | null;
 }
 
@@ -75,6 +76,7 @@ export interface FolderItem {
     id: string;
     name: string;
     parentId: string | null;
+    sortOrder: number;
 }
 
 export type TreeViewItem = UrlItem | FolderItem;
@@ -97,6 +99,7 @@ export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
         body: { type: 'none' }, // Default to no body
         lastStatus: undefined,
         lastChecked: undefined,
+        sortOrder: 0,
         parentId: null
     };
 }
