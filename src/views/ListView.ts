@@ -44,6 +44,7 @@ export class ListView {
             }),
 
             // Item specific commands
+            vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
             vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
             vscode.commands.registerCommand('urlMonitor.refreshItem', (item: UrlItem) => this.refreshItem(item)),
             vscode.commands.registerCommand('urlMonitor.duplicateItem', (item: UrlItem) => this.duplicate(item)),
@@ -131,6 +132,22 @@ export class ListView {
             await this.monitorService.startMonitoring(); // Ensure new items are monitored
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to duplicate: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    public async expandAll(): Promise<void> {
+        const allItems = await this.storageService.getItems();
+        const folderItems = allItems.filter(item => !isUrlItem(item));
+        if (folderItems.length > 0) {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Window,
+                title: 'Expanding all folders...',
+            }, async () => {
+                for (const folder of folderItems) {
+                    // The reveal method will expand the tree to show the element.
+                    await this.treeView.reveal(folder, { expand: true, focus: false, select: false });
+                }
+            });
         }
     }
 

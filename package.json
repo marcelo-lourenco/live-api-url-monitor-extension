@@ -27,6 +27,11 @@
     "contributes": {
         "commands": [
             {
+                "command": "urlMonitor.expandAll",
+                "title": "Expand All",
+                "icon": "$(expand-all)"
+            },
+            {
                 "command": "urlMonitor.refreshList",
                 "title": "Refresh All",
                 "icon": "$(refresh)"
@@ -151,6 +156,11 @@
                     "command": "urlMonitor.importCurl",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@6"
+                },
+                {
+                    "command": "urlMonitor.expandAll",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@7"
                 }
             ],
             "view/item/context": [
