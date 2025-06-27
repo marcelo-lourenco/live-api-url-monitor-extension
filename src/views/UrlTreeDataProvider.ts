@@ -15,7 +15,46 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
         this._onDidChangeTreeData.fire();
     }
 
-    getTreeItem(element: TreeViewItem): vscode.TreeItem {
+    private getDescendantUrlItems(folderId: string, allItems: TreeViewItem[]): UrlItem[] {
+        const descendants: UrlItem[] = [];
+        const directChildren = allItems.filter(item => item.parentId === folderId);
+
+        for (const child of directChildren) {
+            if (isUrlItem(child)) {
+                descendants.push(child);
+            } else { // It's a folder
+                // Recursively get descendants of the sub-folder
+                descendants.push(...this.getDescendantUrlItems(child.id, allItems));
+            }
+        }
+        return descendants;
+    }
+
+    /**
+     * Determines the collective status of a folder based on its children.
+     * - 'down': If at least one child has an error.
+     * - 'up': If all children are 'up'.
+     * - 'unknown': If the folder is empty or contains items with no status yet.
+     */
+    private getFolderStatus(folderId: string, allItems: TreeViewItem[]): 'up' | 'down' | 'unknown' {
+        const descendants = this.getDescendantUrlItems(folderId, allItems);
+
+        if (descendants.length === 0) {
+            return 'unknown'; // Empty folder, default color
+        }
+
+        if (descendants.some(item => item.lastStatus === 'down')) {
+            return 'down'; // If any item is down, folder is red
+        }
+
+        if (descendants.every(item => item.lastStatus === 'up')) {
+            return 'up'; // If ALL items are up, folder is green
+        }
+
+        return 'unknown'; // Otherwise, some items are not yet checked
+    }
+
+    async getTreeItem(element: TreeViewItem): Promise<vscode.TreeItem> {
         if (isUrlItem(element)) {
             const abbrevMap: { [key: string]: string } = {
                 'POST': 'POS', 'DELETE': 'DEL', 'PUT': 'PUT', 'OPTIONS': 'OPT',
@@ -62,10 +101,31 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             return treeItem;
         } else {
             // It's a FolderItem
-            const treeItem = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Collapsed);
+            const allItems = await this.storageService.getItems();
+            const folderStatus = this.getFolderStatus(element.id, allItems);
+
+            const treeItem = new vscode.TreeItem(element.name.toUpperCase(), vscode.TreeItemCollapsibleState.Collapsed);
             treeItem.id = element.id;
             treeItem.contextValue = 'folder';
-            treeItem.iconPath = new vscode.ThemeIcon('folder');
+
+            let iconId: string;
+            let iconColorId: string | undefined;
+
+            switch (folderStatus) {
+                case 'up':
+                    iconId = 'folder-active';
+                    iconColorId = 'testing.iconPassed'; // Green
+                    break;
+                case 'down':
+                    iconId = 'folder-active';
+                    iconColorId = 'testing.iconFailed'; // Red
+                    break;
+                default: // 'unknown'
+                    iconId = 'folder';
+                    iconColorId = undefined; // Use default theme color
+            }
+
+            treeItem.iconPath = new vscode.ThemeIcon(iconId, iconColorId ? new vscode.ThemeColor(iconColorId) : undefined);
             return treeItem;
         }
     }
