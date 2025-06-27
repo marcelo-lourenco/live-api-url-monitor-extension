@@ -28,8 +28,23 @@
         "commands": [
             {
                 "command": "urlMonitor.addItem",
-                "title": "Add URL Item",
+                "title": "New Item",
                 "icon": "$(add)"
+            },
+            {
+                "command": "urlMonitor.addFolder",
+                "title": "New Folder",
+                "icon": "$(new-folder)"
+            },
+            {
+                "command": "urlMonitor.exportItems",
+                "title": "Export to JSON",
+                "icon": "$(git-stash-pop)"
+            },
+            {
+                "command": "urlMonitor.importItems",
+                "title": "Import from JSON",
+                "icon": "$(git-stash)"
             },
             {
                 "command": "urlMonitor.importCurl",
@@ -37,29 +52,73 @@
                 "icon": "$(cloud-download)"
             },
             {
-                "command": "urlMonitor.exportItems",
-                "title": "Export Items",
-                "icon": "$(git-stash-pop)"
-            },
-            {
-                "command": "urlMonitor.importItems",
-                "title": "Import Items",
+                "command": "urlMonitor.exportFolder",
+                "title": "Export Folder to JSON",
                 "icon": "$(git-stash)"
             },
             {
                 "command": "urlMonitor.editItem",
-                "title": "Edit URL Item",
+                "title": "Edit Item",
                 "icon": "$(edit)"
             },
             {
                 "command": "urlMonitor.deleteItem",
-                "title": "Delete URL Item",
+                "title": "Delete Item",
                 "icon": "$(trash)"
             },
             {
-                "command": "urlMonitor.refreshList",
-                "title": "Refresh List",
+                "command": "urlMonitor.refreshFolder",
+                "title": "Refresh Folder",
                 "icon": "$(refresh)"
+            },
+            {
+                "command": "urlMonitor.renameFolder",
+                "title": "Rename Folder"
+            },
+            {
+                "command": "urlMonitor.deleteFolder",
+                "title": "Delete Folder",
+                 "icon": "$(trash)"
+            },
+            {
+                "command": "urlMonitor.refreshItem",
+                "title": "Refresh Item",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "urlMonitor.refreshList",
+                "title": "Refresh All",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "urlMonitor.cutItem",
+                "title": "Cut Item",
+                "icon": "$(cut)"
+            },
+            {
+                "command": "urlMonitor.copyItem",
+                "title": "Copy Item",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "urlMonitor.pasteItem",
+                "title": "Paste Item",
+                "icon": "$(paste)"
+            },
+             {
+                "command": "urlMonitor.cutFolder",
+                "title": "Cut Folder",
+                "icon": "$(cut)"
+            },
+            {
+                "command": "urlMonitor.copyFolder",
+                "title": "Copy Folder",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "urlMonitor.pasteFolder",
+                "title": "Paste Folder",
+                "icon": "$(paste)"
             },
             {
                 "command": "urlMonitor.copyAsCurl",
@@ -71,7 +130,7 @@
             "activitybar": [
                 {
                     "id": "url-monitor",
-                    "title": "URL Monitor",
+                    "title": "Live URL & API Monitor",
                     "icon": "resources/monitor.svg"
                 }
             ]
@@ -80,58 +139,185 @@
             "url-monitor": [
                 {
                     "id": "urlMonitor.list",
-                    "name": "URL Monitor",
-                    "contextualTitle": "URL Monitor",
-                    "icon": "resources/monitor.png"
+                    "name": "Live URL & API Monitor",
+                    "icon": "resources/monito.png"
                 }
             ]
         },
         "menus": {
             "view/title": [
                 {
-                    "command": "urlMonitor.addItem",
+                    "command": "urlMonitor.refreshList",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "urlMonitor.exportItems",
+                    "command": "urlMonitor.addItem",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "urlMonitor.importItems",
+                    "command": "urlMonitor.addFolder",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "urlMonitor.importCurl",
+                    "command": "urlMonitor.exportItems",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@4"
                 },
                 {
-                    "command": "urlMonitor.refreshList",
+                    "command": "urlMonitor.importItems",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@5"
+                },
+                {
+                    "command": "urlMonitor.importCurl",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@6"
+                }
+            ],
+            "view/context": [
+                {
+                    "command": "urlMonitor.refreshList",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "urlMonitor.addItem",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "urlMonitor.addFolder",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "urlMonitor.exportItems",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "urlMonitor.importItems",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@5"
+                },
+                {
+                    "command": "urlMonitor.importCurl",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@6"
                 }
             ],
             "view/item/context": [
+
+
                 {
-                    "command": "urlMonitor.editItem",
+                    "command": "urlMonitor.refreshFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "1_actions@1"
+                },
+                {
+                    "command": "urlMonitor.addItem",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "2_new@1"
+                },
+                {
+                    "command": "urlMonitor.addFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "2_new@2"
+                },
+                {
+                    "command": "urlMonitor.renameFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "3_edit@1"
+                },
+                {
+                    "command": "urlMonitor.cutFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "4_clipboard@1"
+                },
+                {
+                    "command": "urlMonitor.copyFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "4_clipboard@2"
+                },
+                {
+                    "command": "urlMonitor.pasteFolder",
+                    "when": "view == urlMonitor.list && url-monitor-extension.canPaste && viewItem == folder",
+                    "group": "4_clipboard@3"
+                },
+                {
+                    "command": "urlMonitor.exportFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "5_import_export@1"
+                },
+                {
+                    "command": "urlMonitor.deleteFolder",
+                    "when": "view == urlMonitor.list && viewItem == folder",
+                    "group": "6_destructive@1"
+                },
+
+
+                
+                
+
+                {
+                    "command": "urlMonitor.refreshItem",
+                    "when": "view == urlMonitor.list && viewItem == urlItem",
+                    "group": "1_actions@1"
+                },
+                 {
+                    "command": "urlMonitor.refreshItem",
                     "when": "view == urlMonitor.list && viewItem == urlItem",
                     "group": "inline"
                 },
+
                 {
-                    "command": "urlMonitor.deleteItem",
+                    "command": "urlMonitor.editItem",
                     "when": "view == urlMonitor.list && viewItem == urlItem",
-                    "group": "inline"
+                    "group": "2_edit@1"
+                },
+
+
+                {
+                    "command": "urlMonitor.cutItem",
+                    "when": "view == urlMonitor.list && viewItem == urlItem",
+                    "group": "3_clipboard@1"
+                },
+                {
+                    "command": "urlMonitor.copyItem",
+                    "when": "view == urlMonitor.list && viewItem == urlItem",
+                    "group": "3_clipboard@2"
+                },
+                {
+                    "command": "urlMonitor.pasteItem",
+                    "when": "view == urlMonitor.list && url-monitor-extension.canPaste && viewItem == urlItem",
+                    "group": "3_clipboard@3"
+                },
+                {
+                    "command": "urlMonitor.exportItems",
+                    "when": "view == urlMonitor.list && viewItem == urlItem",
+                    "group": "4_import_export@1"
                 },
                 {
                     "command": "urlMonitor.copyAsCurl",
                     "when": "view == urlMonitor.list && viewItem == urlItem",
-                    "group": "inline"
+                    "group": "4_import_export@2"
+                },
+
+                {
+                    "command": "urlMonitor.deleteItem",
+                    "when": "view == urlMonitor.list && viewItem == urlItem",
+                    "group":"5_destructive@1"
                 }
+                
             ]
-        }
+            
+        },
+        "context": [
+            { "name": "url-monitor-extension.canPaste", "description": "Whether there is an item in the extension's clipboard to paste." }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run package",
