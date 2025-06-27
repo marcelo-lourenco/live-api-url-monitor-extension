@@ -6,12 +6,12 @@ import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
 export class AddEditView {
     private panel: vscode.WebviewPanel | undefined;
     private resolvePromise: ((value: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined) => void) | undefined;
-    private currentItemForForm: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined;
+    private currentItemForForm: (UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) & { parentId?: string | null } | undefined;
 
     constructor(private context: vscode.ExtensionContext) { }
 
-    public async showAddForm(): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
-        this.currentItemForForm = createDefaultUrlItem();
+    public async showAddForm(parentId: string | null = null): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
+        this.currentItemForForm = { ...createDefaultUrlItem(), parentId };
         this.currentItemForForm.interval = 60;
         return this.showForm('Add URL Item', this.currentItemForForm);
     }
@@ -35,14 +35,14 @@ export class AddEditView {
         return this.showForm('Edit URL Item', this.currentItemForForm);
     }
 
-    private async showForm(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>): Promise<any> {
+    private async showForm(title: string, itemData?: (UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) & { parentId?: string | null }): Promise<any> {
         return new Promise((resolve) => {
             this.resolvePromise = resolve;
             this.createOrShowPanel(title, itemData || this.currentItemForForm);
         });
     }
 
-    private createOrShowPanel(title: string, itemData?: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) {
+    private createOrShowPanel(title: string, itemData?: (UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) & { parentId?: string | null }) {
         const column = vscode.window.activeTextEditor?.viewColumn;
 
         if (this.panel) {
@@ -128,6 +128,7 @@ export class AddEditView {
                         finalData.id = (this.currentItemForForm as UrlItem).id;
                     }
 
+                    finalData.parentId = this.currentItemForForm?.parentId ?? null;
                     this.resolvePromise(finalData as UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>);
                     this.resolvePromise = undefined;
                     this.panel?.dispose();

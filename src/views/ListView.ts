@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import { StorageService } from '../services/StorageService';
 import { AddEditView } from './AddEditView';
-import { UrlItem } from '../models/UrlItem';
+import { UrlItem, FolderItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
 import { UrlTreeDataProvider } from './UrlTreeDataProvider';
 import { MonitorService } from '../services/MonitorService';
 
 export class ListView {
-    private treeView: vscode.TreeView<UrlItem>;
+    private treeView: vscode.TreeView<TreeViewItem>;
     private treeDataProvider: UrlTreeDataProvider;
 
     constructor(
@@ -18,7 +18,9 @@ export class ListView {
         this.treeDataProvider = new UrlTreeDataProvider(storageService);
         this.treeView = vscode.window.createTreeView('urlMonitor.list', {
             treeDataProvider: this.treeDataProvider,
-            showCollapseAll: true
+            dragAndDropController: this.treeDataProvider,
+            showCollapseAll: true,
+            canSelectMany: true
         });
 
         this.registerCommands();
@@ -26,13 +28,7 @@ export class ListView {
 
     private registerCommands() {
         this.context.subscriptions.push(
-            // Comandos iniciados a partir da UI da lista (barra de título, menu de contexto)
-            vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem()),
-            vscode.commands.registerCommand('urlMonitor.editItem', (itemOrId: UrlItem | string) => {
-                const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
-                this.editItem(itemId);
-            }),
-            vscode.commands.registerCommand('urlMonitor.deleteItem', (item: UrlItem) => this.deleteItem(item)),
+            // Item/Folder agnostic commands
             vscode.commands.registerCommand('urlMonitor.refreshList', async () => {
                 await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -46,18 +42,29 @@ export class ListView {
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 });
             }),
-            vscode.commands.registerCommand('urlMonitor.copyAsCurl', (item: UrlItem) => this.copyAsCurl(item))
-            // NOTA: O comando 'urlMonitor.importCurl' é registrado em extension.ts para manter a lógica de comando
-            // separada da lógica da view, evitando acoplamento excessivo.
+
+            // Item specific commands
+            vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
+            vscode.commands.registerCommand('urlMonitor.refreshItem', (item: UrlItem) => this.refreshItem(item)),
+            vscode.commands.registerCommand('urlMonitor.editItem', (item: UrlItem) => this.editItem(item)),
+            vscode.commands.registerCommand('urlMonitor.deleteItem', (item: UrlItem) => this.deleteItem(item)),
+            vscode.commands.registerCommand('urlMonitor.copyAsCurl', (item: UrlItem) => this.copyAsCurl(item)),
+
+            // Folder specific commands
+            vscode.commands.registerCommand('urlMonitor.addFolder', (context?: FolderItem) => this.addFolder(context)),
+            vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
+            vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item)),
+            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item))
         );
     }
 
-    public async addItem() {
+    public async addItem(context?: FolderItem) {
         try {
-            const newItemData = await this.addEditView.showAddForm();
+            const parentId = context ? context.id : null;
+            const newItemData = await this.addEditView.showAddForm(parentId);
             if (newItemData) {
                 const addedItem = await this.storageService.addItem(newItemData);
-                await this.monitorService.checkItemImmediately(addedItem);
+                await this.monitorService.checkItemImmediately(addedItem as UrlItem);
                 await this.monitorService.startMonitoring();
                 this.refresh();
                 vscode.window.showInformationMessage(`"${addedItem.name}" added. Initial status checked.`);
@@ -67,16 +74,9 @@ export class ListView {
         }
     }
 
-    public async editItem(itemId: string) {
+    public async editItem(item: UrlItem) {
         try {
-            const items = await this.storageService.getItems();
-            const item = items.find(i => i.id === itemId);
-            if (!item) {
-                vscode.window.showErrorMessage('Item not found for editing.');
-                return;
-            }
-
-            const updatedItemData = await this.addEditView.showEditForm(item);
+            const updatedItemData = await this.addEditView.showEditForm(item as UrlItem);
             if (updatedItemData) {
                 await this.storageService.updateItem(updatedItemData);
                 await this.monitorService.checkItemImmediately(updatedItemData);
@@ -89,9 +89,22 @@ export class ListView {
         }
     }
 
-    public async deleteItem(item: UrlItem) {
-        const confirm = await vscode.window.showInformationMessage(
-            `Delete "${item.name}"? This will remove it from monitoring.`,
+    public async deleteItem(item: UrlItem): Promise<void> {
+        await this.confirmAndDelete(item);
+    }
+
+    public async deleteFolder(item: FolderItem): Promise<void> {
+        await this.confirmAndDelete(item);
+    }
+
+    private async confirmAndDelete(item: TreeViewItem): Promise<void> {
+        const itemType = isUrlItem(item) ? 'item' : 'folder';
+        const message = itemType === 'folder'
+            ? `Delete folder "${item.name}" and all its contents? This action cannot be undone.`
+            : `Delete "${item.name}"? This will remove it from monitoring.`;
+
+        const confirm = await vscode.window.showWarningMessage(
+            message,
             { modal: true },
             'Delete'
         );
@@ -105,6 +118,71 @@ export class ListView {
             } catch (error) {
                 vscode.window.showErrorMessage(`Failed to delete item: ${error instanceof Error ? error.message : String(error)}`);
             }
+        }
+    }
+
+    public async refreshItem(item: UrlItem): Promise<void> {
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Window, // Subtle progress
+            title: `Refreshing "${item.name}"...`,
+        }, async () => {
+            await this.monitorService.checkItemImmediately(item);
+        });
+        // The view will auto-refresh due to onStatusChange event
+    }
+
+    public async refreshFolder(folder: FolderItem): Promise<void> {
+        const descendantItems = await this.storageService.getDescendantUrlItems(folder.id);
+
+        if (descendantItems.length === 0) {
+            vscode.window.showInformationMessage(`Folder "${folder.name}" contains no items to refresh.`);
+            return;
+        }
+
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Refreshing folder "${folder.name}" (${descendantItems.length} items)...`,
+            cancellable: false
+        }, async () => {
+            await this.monitorService.forceCheckItems(descendantItems);
+        });
+    }
+
+    public async addFolder(context?: FolderItem) {
+        const folderName = await vscode.window.showInputBox({
+            prompt: 'Enter the name for the new folder',
+            placeHolder: 'My API Tests',
+            validateInput: value => {
+                return value.trim().length > 0 ? null : 'Folder name cannot be empty.';
+            }
+        });
+
+        if (folderName) {
+            try {
+                const parentId = context ? context.id : null;
+                const newFolder: Omit<FolderItem, 'id'> = {
+                    type: 'folder',
+                    name: folderName.trim(),
+                    parentId: parentId
+                };
+                await this.storageService.addItem(newFolder);
+                this.refresh();
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to create folder: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+    }
+
+    public async renameFolder(item: FolderItem) {
+        const newName = await vscode.window.showInputBox({
+            prompt: 'Enter the new name for the folder',
+            value: item.name
+        });
+
+        if (newName && newName.trim() !== item.name) {
+            const updatedFolder: FolderItem = { ...item, name: newName.trim() };
+            await this.storageService.updateItem(updatedFolder);
+            this.refresh();
         }
     }
 

@@ -89,13 +89,29 @@ export class MonitorService {
         this.updateErrorStatus();
     }
 
+    public async forceCheckItems(items: UrlItem[]): Promise<void> {
+        if (items.length === 0) {
+            return;
+        }
+        // Perform all checks in parallel
+        const checkPromises = items.map(async (item) => {
+            const status = await this.performCheckLogic(item);
+            // Update status but don't notify yet
+            await this.storageService.updateItemStatus(item.id, status);
+        });
+    
+        await Promise.all(checkPromises);
+    
+        // After all are done, trigger a single notification/UI refresh
+        this.updateErrorStatus();
+    }
+
     public async checkItemImmediately(item: UrlItem): Promise<void> {
-        const status = await this.performCheckLogic(item);
-        await this.updateAndNotify(item.id, status);
+        await this.forceCheckItems([item]);
     }
 
     async startMonitoring(): Promise<void> {
-        const items = await this.storageService.getItems();
+        const items = await this.storageService.getAllUrlItems();
         const oldTimers = new Map(this.timers);
         this.timers.clear();
 
@@ -123,7 +139,7 @@ export class MonitorService {
 
     private scheduleCheck(item: UrlItem, initialCheckPromises?: Promise<void>[]) {
         const checkAndReschedule = async () => {
-            const currentItems = await this.storageService.getItems();
+            const currentItems = await this.storageService.getAllUrlItems();
             const currentItem = currentItems.find(i => i.id === item.id);
 
             if (!currentItem) {
@@ -162,7 +178,7 @@ export class MonitorService {
     }
 
     private async updateErrorStatus() {
-        const items = await this.storageService.getItems();
+        const items = await this.storageService.getAllUrlItems();
         const errorCount = items.filter(item => item.lastStatus === 'down').length;
         this.notifyStatusChange(errorCount);
     }
@@ -176,8 +192,7 @@ export class MonitorService {
     }
 
     public async forceCheckAllItems(): Promise<void> {
-        const items = await this.storageService.getItems();
-        const checkPromises = items.map(item => this.checkItemImmediately(item));
-        await Promise.all(checkPromises);
+        const items = await this.storageService.getAllUrlItems();
+        await this.forceCheckItems(items);
     }
 }

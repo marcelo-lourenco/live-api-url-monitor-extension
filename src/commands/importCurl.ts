@@ -46,7 +46,7 @@ export class ImportCurlCommand {
             };
 
             const addedItem = await this.storageService.addItem(newItem);
-            await this.monitorService.checkItemImmediately(addedItem);
+            await this.monitorService.checkItemImmediately(addedItem as UrlItem);
             await this.monitorService.startMonitoring(); // Restart monitoring to include the new item
 
             vscode.window.showInformationMessage(`Successfully imported from cURL: "${addedItem.name}"`);

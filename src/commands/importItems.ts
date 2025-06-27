@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StorageService } from '../services/StorageService';
 import { MonitorService } from '../services/MonitorService';
-import { UrlItem } from '../models/UrlItem';
+import { TreeViewItem, isUrlItem, UrlItem, FolderItem } from '../models/UrlItem';
 
 export class ImportItemsCommand {
     constructor(
@@ -27,25 +27,38 @@ export class ImportItemsCommand {
 
             const fileContent = await vscode.workspace.fs.readFile(uri[0]);
             const jsonString = Buffer.from(fileContent).toString('utf8');
-            const importedItems: UrlItem[] = JSON.parse(jsonString);
+            const importedItems: TreeViewItem[] = JSON.parse(jsonString);
 
             if (!Array.isArray(importedItems)) {
-                throw new Error('Invalid JSON format: Expected an array of URL items.');
+                throw new Error('Invalid JSON format: Expected an array of items.');
             }
 
             let importedCount = 0;
             for (const item of importedItems) {
-                // Basic validation to ensure it's a plausible UrlItem
-                if (item && typeof item.name === 'string' && typeof item.url === 'string') {
-                    // addItem generates a new ID, preventing conflicts with existing items
-                    // and ensuring consistency if the imported JSON had IDs.
-                    await this.storageService.addItem({
-                        ...item,
-                        lastStatus: undefined, // Reset status on import
-                        lastChecked: undefined // Reset last checked on import
-                    });
-                    importedCount++;
+                if (!item || typeof item.name !== 'string') {
+                    continue; // Skip invalid or malformed entries
                 }
+
+                // Create a copy, remove old ID to let StorageService generate a new one.
+                const cleanItem: any = { ...item };
+                delete cleanItem.id;
+
+                // Handle old format (no type) vs new format, and ensure parentId is set.
+                if (cleanItem.type === undefined) {
+                    // This is an old format UrlItem
+                    cleanItem.type = 'url';
+                    cleanItem.parentId = null;
+                } else {
+                    // This is a new format item, ensure parentId exists and is not undefined.
+                    cleanItem.parentId = cleanItem.parentId || null;
+                }
+
+                if (isUrlItem(cleanItem)) {
+                    cleanItem.lastStatus = undefined;
+                    cleanItem.lastChecked = undefined;
+                }
+                await this.storageService.addItem(cleanItem);
+                importedCount++;
             }
 
             await this.monitorService.startMonitoring(); // Restart monitoring to include new items
