@@ -3,6 +3,7 @@ import { StorageService } from '../services/StorageService';
 import { AddEditView } from './AddEditView';
 import { UrlItem, FolderItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
 import { UrlTreeDataProvider } from './UrlTreeDataProvider';
+import { LogViewProvider } from './LogViewProvider';
 import { MonitorService } from '../services/MonitorService';
 
 export class ListView {
@@ -14,6 +15,7 @@ export class ListView {
         private storageService: StorageService,
         private addEditView: AddEditView,
         private monitorService: MonitorService,
+        private logViewProvider: LogViewProvider
     ) {
         this.treeDataProvider = new UrlTreeDataProvider(storageService);
         this.treeView = vscode.window.createTreeView('urlMonitor.list', {
@@ -46,6 +48,7 @@ export class ListView {
             // Item specific commands
             vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
             vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
+            vscode.commands.registerCommand('urlMonitor.showLog', (item?: TreeViewItem) => this.showLog(item)),
             vscode.commands.registerCommand('urlMonitor.refreshItem', (item: UrlItem) => this.refreshItem(item)),
             vscode.commands.registerCommand('urlMonitor.duplicateItem', (item: UrlItem) => this.duplicate(item)),
             vscode.commands.registerCommand('urlMonitor.editItem', (item: UrlItem) => this.editItem(item)),
@@ -121,6 +124,25 @@ export class ListView {
             } catch (error) {
                 vscode.window.showErrorMessage(`Failed to delete item: ${error instanceof Error ? error.message : String(error)}`);
             }
+        }
+    }
+
+    public async showLog(item?: TreeViewItem): Promise<void> {
+        if (!item) {
+            // Show general log
+            await this.logViewProvider.showLog('All Logs');
+        } else if (isUrlItem(item)) {
+            // Show log for a single item
+            await this.logViewProvider.showLog(item.name, [item.id]);
+        } else {
+            // Show log for a folder and all its descendants
+            const descendantItems = await this.storageService.getDescendantUrlItems(item.id);
+            if (descendantItems.length === 0) {
+                vscode.window.showInformationMessage(`Folder "${item.name}" has no items to show logs for.`);
+                return;
+            }
+            const descendantIds = descendantItems.map(d => d.id);
+            await this.logViewProvider.showLog(item.name, descendantIds);
         }
     }
 

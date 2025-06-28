@@ -1,24 +1,29 @@
 import * as vscode from 'vscode';
 import { StorageService } from './services/StorageService';
 import { MonitorService } from './services/MonitorService';
+import { LogService } from './services/LogService';
 import { ListView } from './views/ListView';
+import { LogViewProvider } from './views/LogViewProvider';
 import { ExportItemsCommand } from './commands/exportItems';
 import { ImportItemsCommand } from './commands/importItems';
 import { AddEditView } from './views/AddEditView';
 import { ImportCurlCommand } from './commands/importCurl';
 
 let monitorService: MonitorService;
+let logService: LogService;
 
 export async function activate(context: vscode.ExtensionContext) { // Marcado como async
     // Initialize services
     const storageService = new StorageService(context.globalState);
-    monitorService = new MonitorService(storageService);
+    logService = new LogService(context);
+    monitorService = new MonitorService(storageService, logService);
     const addEditView = new AddEditView(context);
+    const logViewProvider = new LogViewProvider(logService);
     // Passa monitorService para ListView
     const exportItemsCommand = new ExportItemsCommand(storageService);
     const importItemsCommand = new ImportItemsCommand(storageService, monitorService);
     const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
-    const listView = new ListView(context, storageService, addEditView, monitorService);
+    const listView = new ListView(context, storageService, addEditView, monitorService, logViewProvider);
 
     // Register webview panel serializer
     context.subscriptions.push(
@@ -29,6 +34,11 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
                 addEditView.restoreWebview(webviewPanel);
             }
         })
+    );
+
+    // Register log view provider
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(LogViewProvider.scheme, logViewProvider)
     );
 
     context.subscriptions.push(
@@ -46,6 +56,10 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
                 listView.refresh();
             }
         })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('urlMonitor.clearAllLogs', () => logService.clearAllLogs())
     );
 
 

@@ -1,7 +1,15 @@
 import * as vscode from 'vscode';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 import { UrlItem } from '../models/UrlItem';
 import { StorageService } from './StorageService';
+import { LogService } from './LogService';
+
+interface CheckResult {
+    status: 'up' | 'down';
+    statusCode?: number;
+    durationMs: number;
+    error?: string;
+}
 
 export class MonitorService {
     private timers: Map<string, NodeJS.Timeout | null> = new Map();
@@ -9,9 +17,13 @@ export class MonitorService {
     private _onStatusChange = new vscode.EventEmitter<number>();
     public readonly onStatusChange = this._onStatusChange.event;
 
-    constructor(private storageService: StorageService) { }
+    constructor(
+        private storageService: StorageService,
+        private logService: LogService
+    ) { }
 
-    private async performCheckLogic(item: UrlItem): Promise<'up' | 'down'> {
+    private async performCheckLogic(item: UrlItem): Promise<CheckResult> {
+        const startTime = Date.now();
         try {
             const headers = item.headers || {};
             const config: AxiosRequestConfig = {
@@ -22,7 +34,11 @@ export class MonitorService {
             };
 
             if (!config.url) {
-                return 'down';
+                return {
+                    status: 'down',
+                    error: 'URL is not defined.',
+                    durationMs: Date.now() - startTime
+                };
             }
 
             if (item.queryParams && item.queryParams.length > 0) {
@@ -78,18 +94,41 @@ export class MonitorService {
             }
 
             const response = await axios(config);
-            return response.status === item.expectedStatusCode ? 'up' : 'down';
-        } catch (error) {
-            return 'down';
+            const durationMs = Date.now() - startTime;
+            const isSuccess = response.status === item.expectedStatusCode;
+
+            return {
+                status: isSuccess ? 'up' : 'down',
+                statusCode: response.status,
+                durationMs: durationMs,
+                error: isSuccess ? undefined : `Expected status ${item.expectedStatusCode}, but received ${response.status}.`
+            };
+        } catch (error: any) {
+            const durationMs = Date.now() - startTime;
+            const axiosError = error as AxiosError;
+            return {
+                status: 'down',
+                statusCode: axiosError.response?.status,
+                durationMs: durationMs,
+                error: axiosError.message
+            };
         }
     }
 
-    private async processStatusUpdate(item: UrlItem, newStatus: 'up' | 'down'): Promise<void> {
+    private async processStatusUpdate(item: UrlItem, result: CheckResult): Promise<void> {
         // If status changed to 'down', show an immediate error message.
-        if (newStatus === 'down' && item.lastStatus !== 'down') {
+        if (result.status === 'down' && item.lastStatus !== 'down') {
             vscode.window.showErrorMessage(`Monitor Alert: "${item.name}" is down. URL: ${item.url}`);
         }
-        await this.storageService.updateItemStatus(item.id, newStatus);
+        await this.storageService.updateItemStatus(item.id, result.status);
+        await this.logService.addLog({
+            itemId: item.id,
+            itemName: item.name,
+            status: result.status,
+            statusCode: result.statusCode,
+            durationMs: result.durationMs,
+            error: result.error
+        });
     }
 
     public async forceCheckItems(items: UrlItem[]): Promise<void> {
@@ -98,8 +137,8 @@ export class MonitorService {
         }
         // Perform all checks in parallel
         const checkPromises = items.map(async (item) => {
-            const status = await this.performCheckLogic(item);
-            await this.processStatusUpdate(item, status);
+            const result = await this.performCheckLogic(item);
+            await this.processStatusUpdate(item, result);
         });
     
         await Promise.all(checkPromises);
@@ -153,8 +192,8 @@ export class MonitorService {
                 return;
             }
 
-            const status = await this.performCheckLogic(currentItem);
-            await this.processStatusUpdate(currentItem, status);
+            const result = await this.performCheckLogic(currentItem);
+            await this.processStatusUpdate(currentItem, result);
             this.updateErrorStatus();
 
             if (this.timers.has(currentItem.id)) {

@@ -47,6 +47,16 @@
                 "icon": "$(new-folder)"
             },
             {
+                "command": "urlMonitor.showLog",
+                "title": "Show Log",
+                "icon": "$(notebook)"
+            },
+            {
+                "command": "urlMonitor.clearAllLogs",
+                "title": "Clear All Logs",
+                "icon": "$(clear-all)"
+            },
+            {
                 "command": "urlMonitor.refreshItem",
                 "title": "Refresh Item",
                 "icon": "$(refresh)"
@@ -158,13 +168,22 @@
                     "group": "navigation@6"
                 },
                 {
-                    "command": "urlMonitor.expandAll",
+                    "command": "urlMonitor.showLog",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@7"
+                },
+                {
+                    "command": "urlMonitor.clearAllLogs",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@8"
+                },
+                {
+                    "command": "urlMonitor.expandAll",
+                    "when": "view == urlMonitor.list",
+                    "group": "navigation@99"
                 }
             ],
             "view/item/context": [
-
                 {
                     "command": "urlMonitor.addItem",
                     "when": "viewItem == 'folder'",
@@ -180,17 +199,11 @@
                     "when": "viewItem == 'folder'",
                     "group": "inline"
                 },
-
-
                 {
                     "command": "urlMonitor.refreshItem",
                     "when": "viewItem == 'urlItem'",
                     "group": "inline"
                 },
-
-
-
-
                 {
                     "command": "urlMonitor.refreshFolder",
                     "when": "viewItem == 'folder'",
@@ -221,11 +234,6 @@
                     "when": "viewItem == 'folder'",
                     "group": "9_destructive@1"
                 },
-                {
-                    "command": "urlMonitor.deleteFolder",
-                    "when": "viewItem == 'folder'",
-                    "group": "9_destructive@1"
-                },
 
 
                 {
@@ -247,6 +255,11 @@
                     "command": "urlMonitor.copyAsCurl",
                     "when": "viewItem == 'urlItem'",
                     "group": "5_actions@1"
+                },
+                {
+                    "command": "urlMonitor.showLog",
+                    "when": "viewItem == 'urlItem' || viewItem == 'folder'",
+                    "group": "inline"
                 },
                 {
                     "command": "urlMonitor.deleteItem",
