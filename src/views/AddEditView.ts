@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
+import * as fs from 'fs';
 import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
 
 export class AddEditView {
@@ -29,6 +29,16 @@ export class AddEditView {
             delete (itemToEdit as any).password;
         } else if (!itemToEdit.auth) {
             itemToEdit.auth = { type: 'noauth' };
+        }
+
+        // Set default for items created before this feature
+        if (!itemToEdit.logLevel) {
+            itemToEdit.logLevel = 'all';
+        }
+
+        // Set default for items created before this feature
+        if (!itemToEdit.logLevel) {
+            itemToEdit.logLevel = 'all';
         }
 
         this.currentItemForForm = itemToEdit;
@@ -122,6 +132,7 @@ export class AddEditView {
                         queryParams: dataToSave.queryParams,
                         auth: dataToSave.auth,
                         body: dataToSave.body,
+                        logLevel: dataToSave.logLevel,
                     };
 
                     if (this.currentItemForForm && 'id' in this.currentItemForForm) {

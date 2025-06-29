@@ -121,6 +121,19 @@ export class MonitorService {
             vscode.window.showErrorMessage(`Monitor Alert: "${item.name}" is down. URL: ${item.url}`);
         }
         await this.storageService.updateItemStatus(item.id, result.status);
+
+        // Respect the item's log level setting
+        const logLevel = item.logLevel || 'all'; // Default to 'all' for backward compatibility
+
+        if (logLevel === 'none') {
+            return; // Do not log anything
+        }
+
+        if (logLevel === 'error' && result.status !== 'down') {
+            return; // Log only errors, and this was a success
+        }
+
+        // Log all results or only errors (if it's an error)
         await this.logService.addLog({
             itemId: item.id,
             itemName: item.name,

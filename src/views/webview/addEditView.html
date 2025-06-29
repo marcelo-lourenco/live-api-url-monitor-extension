@@ -20,7 +20,7 @@
     </div>
     <div class="form-container">
         <div class="form-row">
-            <div class="form-group col-8">
+            <div class="form-group col-6">
                 <label for="name">Item Name *</label>
                 <input type="text" id="name" required>
             </div>
@@ -42,6 +42,14 @@
                         </select>
                     </div>
                 </div>
+            </div>
+            <div class="form-group col-2">
+                <label for="log-level">Log Level</label>
+                <select id="log-level" name="logLevel">
+                    <option value="error" selected>Save only on error</option>
+                    <option value="all">Save all logs</option>
+                    <option value="none">Don't save logs</option>
+                </select>
             </div>
         </div>
 

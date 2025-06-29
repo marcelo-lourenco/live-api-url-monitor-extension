@@ -20,6 +20,7 @@ const divRawlanguage = document.getElementById('div-raw-language') as HTMLSelect
 const divBeautifyBtn = document.getElementById('div-beautify-btn') as HTMLSelectElement;
 const intervalUnitSelect = document.getElementById('intervalUnit') as HTMLSelectElement;
 const authTypeSelect = document.getElementById('authType') as HTMLSelectElement;
+const logLevelSelect = document.getElementById('log-level') as HTMLSelectElement;
 
 let isProgrammaticUpdate = false;
 
@@ -166,6 +167,9 @@ function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
     const body = itemToRender.body || { type: 'none' };
 
     nameInput.value = itemToRender.name || '';
+    // Esta é a primeira alteração: carregar o dado existente.
+    // Se o item não tiver um logLevel (itens antigos), o padrão será 'all'.
+    logLevelSelect.value = itemToRender.logLevel || 'all';
     urlInput.value = itemToRender.url || '';
     methodSelect.value = itemToRender.method || 'GET';
     statusCodeInput.value = (itemToRender.expectedStatusCode || 200).toString();
@@ -318,7 +322,9 @@ function gatherFormData() {
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         queryParams: queryParams,
         auth: authData,
-        body: bodyData
+        body: bodyData,
+        // Esta é a segunda alteração: incluir o novo valor ao salvar.
+        logLevel: logLevelSelect.value
     };
 }
 

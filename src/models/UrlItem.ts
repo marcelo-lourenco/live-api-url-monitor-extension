@@ -1,4 +1,5 @@
 export type AuthType = 'noauth' | 'apikey' | 'basic' | 'bearer' | 'oauth2' | 'awsv4' | 'oauth1';
+export type LogLevel = 'all' | 'error' | 'none';
 
 export interface NoAuth {
     type: 'noauth';
@@ -69,6 +70,7 @@ export interface UrlItem {
     lastChecked?: string;
     sortOrder: number;
     parentId: string | null;
+    logLevel: LogLevel;
 }
 
 export interface FolderItem {
@@ -100,6 +102,7 @@ export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
         lastStatus: undefined,
         lastChecked: undefined,
         sortOrder: 0,
-        parentId: null
+        parentId: null,
+        logLevel: 'all'
     };
 }
