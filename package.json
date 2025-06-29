@@ -135,6 +135,13 @@
                 }
             ]
         },
+        "submenus": [
+            {
+                "id": "urlMonitor.view.title.submenu",
+                "label": "More Actions",
+                "icon": "$(ellipsis)"
+            }
+        ],
         "menus": {
             "view/title": [
                 {
@@ -143,44 +150,51 @@
                     "group": "navigation@1"
                 },
                 {
-                    "command": "urlMonitor.addItem",
+                    "command": "urlMonitor.addFolder",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "urlMonitor.addFolder",
+                    "command": "urlMonitor.addItem",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "urlMonitor.exportItems",
+                    "command": "urlMonitor.importCurl",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@4"
                 },
                 {
-                    "command": "urlMonitor.importItems",
+                    "submenu": "urlMonitor.view.title.submenu",
                     "when": "view == urlMonitor.list",
-                    "group": "navigation@5"
-                },
-                {
-                    "command": "urlMonitor.importCurl",
-                    "when": "view == urlMonitor.list",
-                    "group": "navigation@6"
-                },
-                {
-                    "command": "urlMonitor.showLog",
-                    "when": "view == urlMonitor.list",
-                    "group": "navigation@7"
-                },
-                {
-                    "command": "urlMonitor.clearAllLogs",
-                    "when": "view == urlMonitor.list",
-                    "group": "navigation@8"
+                    "group": "navigation@99"
                 },
                 {
                     "command": "urlMonitor.expandAll",
                     "when": "view == urlMonitor.list",
-                    "group": "navigation@99"
+                    "group": "navigation@100"
+                }
+            ],
+            "urlMonitor.view.title.submenu": [
+                {
+                    "command": "urlMonitor.showLog",
+                    "icon": "$(notebook)",
+                    "group": "1_log@1"
+                },
+                {
+                    "command": "urlMonitor.clearAllLogs",
+                    "icon": "$(clear-all)",
+                    "group": "1_log@2"
+                },
+                {
+                    "command": "urlMonitor.exportItems",
+                    "when": "view == urlMonitor.list",
+                    "group": "2_data@1"
+                },
+                {
+                    "command": "urlMonitor.importItems",
+                    "when": "view == urlMonitor.list",
+                    "group": "2_data@2"
                 }
             ],
             "view/item/context": [
