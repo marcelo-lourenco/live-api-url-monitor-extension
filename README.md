@@ -1,75 +1,36 @@
 # Live API & URL Monitor
 
-Your API and Endpoint watchdog, right inside VS Code. Monitor the health of your services without ever leaving your development environment.
+**Live API & URL Monitor** is a Visual Studio Code extension that monitors the availability and status of APIs and URLs in real time, directly within your development environment.
 
-![Extension Demonstration](https://raw.githubusercontent.com/marcelo-lourenco/live-api-url-monitor-extension/main/assets/demo.gif)
+![Monitor](resources/monitor1.png)
 
----
+## Key Features
 
-## ✨ Key Features
+- **Continuous monitoring** with configurable intervals (seconds, minutes, or hours)
+- **Tree view** with folder and subfolder support for organized item grouping
+- **Real-time status indicators** showing the current state of each item
+- **Native notifications** when services fail or recover
+- **Full HTTP request support**: method, headers, query parameters, and request body
+- **Advanced logging system** with per-item, per-folder, and global history
+- **Import and export monitoring items** in JSON format
+- **Import requests from a cURL command**; export any item as a cURL command
+- **Pause and Resume** monitoring
+- **Clean and accessible interface** with context menus and command palette integration
 
-- **Continuous Monitoring:** Check the status of URLs and APIs at configurable intervals (seconds, minutes, or hours).
-- **Tree View:** Organize your endpoints into folders and subfolders for clear and efficient management.
-- **Immediate Visual Feedback:** Colored icons show the real-time status of each item and folder. Green for 'OK', Red for 'Error'.
-- **Instant Alerts:** Receive a VS Code notification the moment a service becomes unavailable.
-- **Detailed Requests:** Full support for HTTP methods (GET, POST, etc.), headers, query params, and request body.
-- **Advanced Logging System:**
-  - View the request history for all items, a specific folder, or a single endpoint.
-  - Control the log level per item: save all results, only errors, or disable logging entirely.
-- **Import & Export:**
-  - Import and export your monitoring list in JSON format.
-  - Quickly import requests from a cURL command.
-  - Copy any item as a cURL command for easy debugging.
-- **Clean & Intuitive Interface:** All commands are accessible through context menus and a well-organized title bar.
+## Motivate us
 
-## 🚀 Getting Started
+If this is what you were looking for, please consider giving us a [5-star rating](https://marketplace.visualstudio.com/items?itemName=mlourenco.live-api-url-monitor-extension&ssr=false#review-details).
 
-1. Open the **Live API & URL Monitor** extension tab in the VS Code sidebar.
-2. Click the `➕` (Add Item) icon in the view's title bar to add your first endpoint.
-3. Fill in the name, URL, method, and expected status code.
-4. Click **Save**. Monitoring will start immediately!
+We love suggestions. [Leave yours](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions/categories/ideas).
 
-## 🕹️ Commands & Menus
+## Contributing
 
-Most features are just a click away:
+Contributions are welcome! Please feel free to submit [issues](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/issues) and [pull requests](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/fork).
 
-### View Title Bar
+## Resources and Information
 
-- **Add Item (`➕`):** Creates a new endpoint for monitoring.
-- **Add Folder (`📁`):** Creates a new folder to organize your items.
-- **Expand All (`↔️`):** Expands all folders in the view.
-- **More Actions (`...`):**
-  - **Show Log:** Opens a general log with the history of all requests.
-  - **Clear All Logs:** Deletes the entire log history.
-
-### Context Menu (right-click on an item or folder)
-
-- **Refresh:** Forces an immediate status check.
-- **Edit:** Opens the form to edit the settings.
-- **Duplicate:** Creates a copy of the item or folder (including its children).
-- **Show Log:** Shows the log history for only that item or folder.
-- **Copy as cURL:** Copies the request as a cURL command for your terminal.
-- **Delete:** Removes the item or folder.
-
-## ⚙️ Item Configuration
-
-In the add/edit form, you can configure:
-
-- **Request:** Method, URL, Headers, Query Params, and Body.
-- **Validation:** The expected HTTP Status Code to consider the request a success.
-- **Authentication:** Support for major authentication types (API Key, Bearer Token, Basic Auth, etc.).
-- **Check Interval:** The frequency at which the extension will check the endpoint.
-- **Log Level:** Define whether you want to save all logs, only error logs, or no logs for this specific item.
-
-## 📜 Logs
-
-The logging system is a powerful debugging tool. Access the logs through the "More Actions" menu for a general overview, or from an item/folder's context menu for a filtered view.
-
-## 📥/📤 Import & Export
-
-- **Import/Export JSON:** Use the `> URL Monitor: Export Items` and `> URL Monitor: Import Items` commands in the Command Palette (Ctrl+Shift+P) to save and load your configurations.
-- **Import cURL:** Use the `> URL Monitor: Import from cURL` command to quickly add a new item from a copied cURL command.
+[Code of Condut](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=coc-ov-file#readme) • [License MIT](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=MIT-1-ov-file#readme) • [Security](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/security) • [Changelog](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/blob/master/CHANGELOG.md) • [Discussions](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions)
 
 ---
 
-Made with ❤️ for developers and teams who need agility.
+**Live API & URL Monitor** helps developers monitor APIs in real time—without leaving VS Code.
