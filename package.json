@@ -120,11 +120,11 @@
             },
             {
                 "command": "urlMonitor.pauseAll",
-                "title": "Pause All Monitoring",
+                "title": "Pause All",
                 "icon": "$(debug-pause)"
             },
             {
-                "command": "urlMonitor.playAll",
+                "command": "urlMonitor.resumeAll",
                 "title": "Resume All Monitoring",
                 "icon": "$(debug-start)"
             },
@@ -134,17 +134,17 @@
                 "icon": "$(debug-pause)"
             },
             {
-                "command": "urlMonitor.playItem",
+                "command": "urlMonitor.resumeItem",
                 "title": "Resume",
                 "icon": "$(debug-start)"
             },
             {
                 "command": "urlMonitor.pauseFolder",
-                "title": "Pause Folder",
+                "title": "Pause Folder Monitoring",
                 "icon": "$(debug-pause)"
             },
             {
-                "command": "urlMonitor.playFolder",
+                "command": "urlMonitor.resumeFolder",
                 "title": "Resume Folder",
                 "icon": "$(debug-start)"
             }
@@ -187,7 +187,7 @@
                     "group": "navigation@1.5"
                 },
                 {
-                    "command": "urlMonitor.playAll",
+                    "command": "urlMonitor.resumeAll",
                     "when": "view == urlMonitor.list && urlMonitor.allPaused",
                     "group": "navigation@1.5"
                 },
@@ -243,17 +243,17 @@
             "view/item/context": [
                 {
                     "command": "urlMonitor.addItem",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
                     "command": "urlMonitor.addFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
                     "command": "urlMonitor.refreshFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
@@ -262,13 +262,13 @@
                     "group": "inline"
                 },
                 {
-                    "command": "urlMonitor.playFolder",
+                    "command": "urlMonitor.resumeFolder",
                     "when": "viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
                     "command": "urlMonitor.refreshItem",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "inline"
                 },
                 {
@@ -277,7 +277,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "urlMonitor.playItem",
+                    "command": "urlMonitor.resumeItem",
                     "when": "viewItem == 'urlItem-paused'",
                     "group": "inline"
                 },
@@ -287,45 +287,45 @@
                     "group": "1_actions@2"
                 },
                 {
-                    "command": "urlMonitor.playFolder",
+                    "command": "urlMonitor.resumeFolder",
                     "when": "viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "1_actions@2"
                 },
                 {
                     "command": "urlMonitor.refreshFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "1_actions@1"
                 },
                 {
                     "command": "urlMonitor.addItem",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "2_new@1"
                 },
                 {
                     "command": "urlMonitor.addFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "2_new@2"
                 },
                 {
                     "command": "urlMonitor.renameFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "3_edit@1"
                 },
                 {
                     "command": "urlMonitor.duplicateFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "4_actions@1"
                 },
                 {
                     "command": "urlMonitor.deleteFolder",
-                    "when": "viewItem == 'folder'",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "9_destructive@1"
                 },
 
 
                 {
                     "command": "urlMonitor.refreshItem",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "1_actions@1"
                 },
                 {
@@ -334,33 +334,33 @@
                     "group": "1_actions@2"
                 },
                 {
-                    "command": "urlMonitor.playItem",
+                    "command": "urlMonitor.resumeItem",
                     "when": "viewItem == 'urlItem-paused'",
                     "group": "1_actions@1"
                 },
                 {
                     "command": "urlMonitor.editItem",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "2_edit@1"
                 },
                 {
                     "command": "urlMonitor.duplicateItem",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "4_actions@1"
                 },
                 {
                     "command": "urlMonitor.copyAsCurl",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "5_actions@1"
                 },
                 {
                     "command": "urlMonitor.showLog",
-                    "when": "viewItem == 'urlItem' || viewItem == 'folder'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused' || viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
                     "command": "urlMonitor.deleteItem",
-                    "when": "viewItem == 'urlItem'",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
                     "group": "9_destructive@1"
                 }
             ]

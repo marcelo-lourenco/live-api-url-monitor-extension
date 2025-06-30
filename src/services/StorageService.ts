@@ -38,6 +38,12 @@ export class StorageService {
                 itemChanged = true;
             }
 
+            // Migration 4: UrlItems missing 'isPaused'
+            if (isUrlItem(currentItem) && currentItem.isPaused === undefined) {
+                currentItem.isPaused = false;
+                itemChanged = true;
+            }
+
             
             if (itemChanged) {
                 needsUpdate = true;
@@ -105,6 +111,36 @@ export class StorageService {
             item.lastChecked = new Date().toISOString();
             await this.globalState.update(this.storageKey, items);
         }
+    }
+
+    async updateItemPausedState(id: string, isPaused: boolean): Promise<void> {
+        const items = await this.getItems();
+        const item = items.find(i => i.id === id);
+        if (item && isUrlItem(item)) {
+            item.isPaused = isPaused;
+            await this.globalState.update(this.storageKey, items);
+        }
+    }
+
+    async updateMultipleItemsPausedState(ids: string[], isPaused: boolean): Promise<void> {
+        const items = await this.getItems();
+        const idSet = new Set(ids);
+        let changed = false;
+        for (const item of items) {
+            if (idSet.has(item.id) && isUrlItem(item)) {
+                item.isPaused = isPaused;
+                changed = true;
+            }
+        }
+        if (changed) {
+            await this.globalState.update(this.storageKey, items);
+        }
+    }
+
+    async updateAllItemsPausedState(isPaused: boolean): Promise<void> {
+        const items = await this.getItems();
+        items.filter(isUrlItem).forEach(item => item.isPaused = isPaused);
+        await this.globalState.update(this.storageKey, items);
     }
 
     async moveItem(itemId: string, newParentId: string | null): Promise<void> {

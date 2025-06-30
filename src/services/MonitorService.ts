@@ -23,6 +23,15 @@ export class MonitorService {
     ) { }
 
     private async performCheckLogic(item: UrlItem): Promise<CheckResult> {
+        // Immediately return if the item is paused.
+        if (item.isPaused) {
+            return {
+                status: 'up', // Treat as 'up' to not show an error, but with a specific message.
+                durationMs: 0,
+                error: 'Monitoring is paused for this item.'
+            };
+        }
+
         const startTime = Date.now();
         try {
             const headers = item.headers || {};
@@ -145,6 +154,9 @@ export class MonitorService {
     }
 
     public async forceCheckItems(items: UrlItem[]): Promise<void> {
+        // Filter out paused items before forcing a check.
+        items = items.filter(item => !item.isPaused);
+
         if (items.length === 0) {
             return;
         }
@@ -165,7 +177,9 @@ export class MonitorService {
     }
 
     async startMonitoring(): Promise<void> {
-        const items = await this.storageService.getAllUrlItems();
+        // Only monitor items that are not paused
+        const allUrlItems = await this.storageService.getAllUrlItems();
+        const items = allUrlItems.filter(item => !item.isPaused);
         const oldTimers = new Map(this.timers);
         this.timers.clear();
 
@@ -205,6 +219,12 @@ export class MonitorService {
                 return;
             }
 
+            // If item becomes paused while waiting for the next check, stop the timer.
+            if (currentItem.isPaused) {
+                this.stopTimerForItem(currentItem.id);
+                return;
+            }
+
             const result = await this.performCheckLogic(currentItem);
             await this.processStatusUpdate(currentItem, result);
             this.updateErrorStatus();
@@ -223,6 +243,16 @@ export class MonitorService {
         }
     }
 
+    private stopTimerForItem(itemId: string) {
+        if (this.timers.has(itemId)) {
+            const timer = this.timers.get(itemId);
+            if (timer) {
+                clearTimeout(timer);
+            }
+            this.timers.delete(itemId);
+        }
+    }
+
     private clearTimers() {
         this.timers.forEach(timer => {
             if (timer) {
@@ -234,7 +264,7 @@ export class MonitorService {
 
     private async updateErrorStatus() {
         const items = await this.storageService.getAllUrlItems();
-        const errorCount = items.filter(item => item.lastStatus === 'down').length;
+        const errorCount = items.filter(item => !item.isPaused && item.lastStatus === 'down').length;
         this.notifyStatusChange(errorCount);
     }
 
@@ -247,7 +277,8 @@ export class MonitorService {
     }
 
     public async forceCheckAllItems(): Promise<void> {
-        const items = await this.storageService.getAllUrlItems();
+        // Respects paused state by filtering within forceCheckItems
+        const items = await this.storageService.getAllUrlItems(); 
         await this.forceCheckItems(items);
     }
 }

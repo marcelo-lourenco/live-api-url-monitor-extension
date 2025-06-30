@@ -71,6 +71,7 @@ export interface UrlItem {
     sortOrder: number;
     parentId: string | null;
     logLevel: LogLevel;
+    isPaused: boolean;
 }
 
 export interface FolderItem {
@@ -103,6 +104,7 @@ export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
         lastChecked: undefined,
         sortOrder: 0,
         parentId: null,
-        logLevel: 'all'
+        logLevel: 'all',
+        isPaused: false
     };
 }

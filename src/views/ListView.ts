@@ -45,6 +45,14 @@ export class ListView {
                 });
             }),
 
+            // Global Pause/Resume Commands
+            vscode.commands.registerCommand('urlMonitor.pauseAll', () => this.pauseAll()),
+            vscode.commands.registerCommand('urlMonitor.resumeAll', () => this.resumeAll()),
+
+            // Item Pause/Resume Commands
+            vscode.commands.registerCommand('urlMonitor.pauseItem', (item: UrlItem) => this.pauseItem(item)),
+            vscode.commands.registerCommand('urlMonitor.resumeItem', (item: UrlItem) => this.resumeItem(item)),
+
             // Item specific commands
             vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
             vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
@@ -60,7 +68,11 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.duplicateFolder', (folder: FolderItem) => this.duplicate(folder)),
             vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
             vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item)),
-            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item))
+            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item)),
+
+            // Folder Pause/Resume Commands
+            vscode.commands.registerCommand('urlMonitor.pauseFolder', (folder: FolderItem) => this.pauseFolder(folder)),
+            vscode.commands.registerCommand('urlMonitor.resumeFolder', (folder: FolderItem) => this.resumeFolder(folder))
         );
     }
 
@@ -144,6 +156,66 @@ export class ListView {
             const descendantIds = descendantItems.map(d => d.id);
             await this.logViewProvider.showLog(item.name, descendantIds);
         }
+    }
+
+    // --- Pause/Resume Logic ---
+
+    public async pauseAll(): Promise<void> {
+        await this.storageService.updateAllItemsPausedState(true);
+        await this.monitorService.startMonitoring(); // Restart to stop all timers
+        this.refresh();
+        vscode.window.showInformationMessage('All monitoring has been paused.');
+    }
+
+    public async resumeAll(): Promise<void> {
+        await this.storageService.updateAllItemsPausedState(false);
+        await this.monitorService.startMonitoring(); // Restart to re-schedule checks
+        this.refresh();
+        vscode.window.showInformationMessage('All monitoring has been resumed.');
+    }
+
+    public async pauseItem(item: UrlItem): Promise<void> {
+        await this.storageService.updateItemPausedState(item.id, true);
+        await this.monitorService.startMonitoring();
+        this.refresh();
+    }
+
+    public async resumeItem(item: UrlItem): Promise<void> {
+        await this.storageService.updateItemPausedState(item.id, false);
+        await this.monitorService.startMonitoring();
+        this.refresh();
+    }
+
+    public async pauseFolder(folder: FolderItem): Promise<void> {
+        const descendants = await this.storageService.getDescendantUrlItems(folder.id);
+        if (descendants.length === 0) {
+            vscode.window.showInformationMessage(`Folder "${folder.name}" has no items to pause.`);
+            return;
+        }
+        const ids = descendants.map(d => d.id);
+        await this.storageService.updateMultipleItemsPausedState(ids, true);
+        await this.monitorService.startMonitoring();
+        this.refresh();
+        vscode.window.showInformationMessage(`Paused all items in folder "${folder.name}".`);
+    }
+
+    public async resumeFolder(folder: FolderItem): Promise<void> {
+        const descendants = await this.storageService.getDescendantUrlItems(folder.id);
+        if (descendants.length === 0) {
+            vscode.window.showInformationMessage(`Folder "${folder.name}" has no items to resume.`);
+            return;
+        }
+        const ids = descendants.map(d => d.id);
+        await this.storageService.updateMultipleItemsPausedState(ids, false);
+        await this.monitorService.startMonitoring();
+        this.refresh();
+        vscode.window.showInformationMessage(`Resumed all items in folder "${folder.name}".`);
+    }
+
+    private async updateGlobalPauseContext() {
+        const allItems = await this.storageService.getAllUrlItems();
+        const allPaused = allItems.length > 0 && allItems.every(item => item.isPaused);
+        vscode.commands.executeCommand('setContext', 'urlMonitor.allPaused', allPaused);
     }
 
     private async duplicate(item: TreeViewItem): Promise<void> {
@@ -313,6 +385,7 @@ export class ListView {
 
     public refresh() {
         this.treeDataProvider.refresh();
+        this.updateGlobalPauseContext();
     }
 
     public updateBadge(errorCount: number) {

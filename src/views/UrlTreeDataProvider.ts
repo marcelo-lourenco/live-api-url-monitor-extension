@@ -35,12 +35,15 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
      * - 'down': If at least one child has an error.
      * - 'up': If all children are 'up'.
      * - 'unknown': If the folder is empty or contains items with no status yet.
+     * This calculation only considers non-paused items.
      */
     private getFolderStatus(folderId: string, allItems: TreeViewItem[]): 'up' | 'down' | 'unknown' {
-        const descendants = this.getDescendantUrlItems(folderId, allItems);
+        const descendants = this.getDescendantUrlItems(folderId, allItems)
+                                .filter(item => !item.isPaused); // Only consider active items for status
 
         if (descendants.length === 0) {
-            return 'unknown'; // Empty folder, default color
+            // If there are paused items, but no active ones, it's still 'unknown' but not an error.
+            return 'unknown'; 
         }
 
         if (descendants.some(item => item.lastStatus === 'down')) {
@@ -52,6 +55,24 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
         }
 
         return 'unknown'; // Otherwise, some items are not yet checked
+    }
+
+    private getFolderPauseState(folderId: string, allItems: TreeViewItem[]): 'running' | 'paused' | 'mixed' | 'empty' {
+        const descendants = this.getDescendantUrlItems(folderId, allItems);
+        if (descendants.length === 0) {
+            return 'empty';
+        }
+
+        const allPaused = descendants.every(item => item.isPaused);
+        if (allPaused) {
+            return 'paused';
+        }
+
+        const somePaused = descendants.some(item => item.isPaused);
+        if (somePaused) {
+            return 'mixed';
+        }
+        return 'running';
     }
 
     async getTreeItem(element: TreeViewItem): Promise<vscode.TreeItem> {
@@ -68,19 +89,26 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             const treeItem = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
             treeItem.id = element.id;
             treeItem.description = element.url;
-            treeItem.contextValue = 'urlItem';
 
             let iconId: string;
             let iconColorId: string;
-            if (element.lastStatus === 'up') {
-                iconId = 'pass';
-                iconColorId = 'testing.iconPassed';
-            } else if (element.lastStatus === 'down') {
-                iconId = 'error';
-                iconColorId = 'testing.iconFailed';
-            } else {
-                iconId = 'sync-ignored';
+
+            if (element.isPaused) {
+                treeItem.contextValue = 'urlItem-paused';
+                iconId = 'debug-pause';
                 iconColorId = 'disabledForeground';
+            } else {
+                treeItem.contextValue = 'urlItem-running';
+                if (element.lastStatus === 'up') {
+                    iconId = 'pass';
+                    iconColorId = 'testing.iconPassed';
+                } else if (element.lastStatus === 'down') {
+                    iconId = 'error';
+                    iconColorId = 'testing.iconFailed';
+                } else {
+                    iconId = 'sync-ignored';
+                    iconColorId = 'disabledForeground';
+                }
             }
             treeItem.iconPath = new vscode.ThemeIcon(iconId, new vscode.ThemeColor(iconColorId));
 
@@ -96,22 +124,33 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             treeItem.tooltip.appendMarkdown(`- **URL**: \`${element.url}\`\n`);
             treeItem.tooltip.appendMarkdown(`- **Method**: ${method}\n`);
             treeItem.tooltip.appendMarkdown(`- **Status**: ${element.lastStatus || 'Unknown'}\n`);
+            treeItem.tooltip.appendMarkdown(`- **Monitoring**: ${element.isPaused ? 'Paused' : 'Active'}\n`);
             treeItem.tooltip.appendMarkdown(`- **Last Check**: ${lastCheckedTime}\n`);
 
             return treeItem;
         } else {
             // It's a FolderItem
             const allItems = await this.storageService.getItems();
-            const folderStatus = this.getFolderStatus(element.id, allItems);
+            const folderHealthStatus = this.getFolderStatus(element.id, allItems);
+            const folderPauseState = this.getFolderPauseState(element.id, allItems);
 
             const treeItem = new vscode.TreeItem(element.name.toUpperCase(), vscode.TreeItemCollapsibleState.Collapsed);
             treeItem.id = element.id;
-            treeItem.contextValue = 'folder';
+
+            if (folderPauseState === 'empty') {
+                treeItem.contextValue = 'folder';
+            } else if (folderPauseState === 'paused') {
+                treeItem.contextValue = 'folder-paused';
+            } else if (folderPauseState === 'mixed') {
+                treeItem.contextValue = 'folder-mixed';
+            } else { // running
+                treeItem.contextValue = 'folder-running';
+            }
 
             let iconId: string;
             let iconColorId: string | undefined;
 
-            switch (folderStatus) {
+            switch (folderHealthStatus) {
                 case 'up':
                     iconId = 'folder-active';
                     iconColorId = 'testing.iconPassed'; // Green
@@ -123,6 +162,11 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
                 default: // 'unknown'
                     iconId = 'folder';
                     iconColorId = undefined; // Use default theme color
+            }
+
+            if (folderPauseState === 'paused') {
+                iconId = 'folder';
+                iconColorId = 'disabledForeground';
             }
 
             treeItem.iconPath = new vscode.ThemeIcon(iconId, iconColorId ? new vscode.ThemeColor(iconColorId) : undefined);
