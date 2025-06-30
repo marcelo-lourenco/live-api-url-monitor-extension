@@ -45,13 +45,13 @@ export class ListView {
                 });
             }),
 
-            // Global Pause/Resume Commands
+            // Global Pause/Play Commands
             vscode.commands.registerCommand('urlMonitor.pauseAll', () => this.pauseAll()),
-            vscode.commands.registerCommand('urlMonitor.resumeAll', () => this.resumeAll()),
+            vscode.commands.registerCommand('urlMonitor.playAll', () => this.playAll()),
 
-            // Item Pause/Resume Commands
+            // Item Pause/Play Commands
             vscode.commands.registerCommand('urlMonitor.pauseItem', (item: UrlItem) => this.pauseItem(item)),
-            vscode.commands.registerCommand('urlMonitor.resumeItem', (item: UrlItem) => this.resumeItem(item)),
+            vscode.commands.registerCommand('urlMonitor.playItem', (item: UrlItem) => this.playItem(item)),
 
             // Item specific commands
             vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
@@ -70,9 +70,9 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item)),
             vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item)),
 
-            // Folder Pause/Resume Commands
+            // Folder Pause/Play Commands
             vscode.commands.registerCommand('urlMonitor.pauseFolder', (folder: FolderItem) => this.pauseFolder(folder)),
-            vscode.commands.registerCommand('urlMonitor.resumeFolder', (folder: FolderItem) => this.resumeFolder(folder))
+            vscode.commands.registerCommand('urlMonitor.playFolder', (folder: FolderItem) => this.playFolder(folder))
         );
     }
 
@@ -158,7 +158,7 @@ export class ListView {
         }
     }
 
-    // --- Pause/Resume Logic ---
+    // --- Pause/Play Logic ---
 
     public async pauseAll(): Promise<void> {
         await this.storageService.updateAllItemsPausedState(true);
@@ -167,7 +167,7 @@ export class ListView {
         vscode.window.showInformationMessage('All monitoring has been paused.');
     }
 
-    public async resumeAll(): Promise<void> {
+    public async playAll(): Promise<void> {
         await this.storageService.updateAllItemsPausedState(false);
         await this.monitorService.startMonitoring(); // Restart to re-schedule checks
         this.refresh();
@@ -180,7 +180,7 @@ export class ListView {
         this.refresh();
     }
 
-    public async resumeItem(item: UrlItem): Promise<void> {
+    public async playItem(item: UrlItem): Promise<void> {
         await this.storageService.updateItemPausedState(item.id, false);
         await this.monitorService.startMonitoring();
         this.refresh();
@@ -199,7 +199,7 @@ export class ListView {
         vscode.window.showInformationMessage(`Paused all items in folder "${folder.name}".`);
     }
 
-    public async resumeFolder(folder: FolderItem): Promise<void> {
+    public async playFolder(folder: FolderItem): Promise<void> {
         const descendants = await this.storageService.getDescendantUrlItems(folder.id);
         if (descendants.length === 0) {
             vscode.window.showInformationMessage(`Folder "${folder.name}" has no items to resume.`);
