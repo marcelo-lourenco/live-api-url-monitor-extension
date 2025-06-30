@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { UrlItem, FolderItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
+import { UrlItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
 import { StorageService } from '../services/StorageService';
 
 export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem>, vscode.TreeDragAndDropController<TreeViewItem> {

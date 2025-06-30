@@ -2,7 +2,9 @@
     "name": "live-api-url-monitor",
     "displayName": "Live URL & API Monitor",
     "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "publisher": "mlourenco",
+    "icon": "resources/monitor.png",
     "engines": {
         "vscode": "^1.75.0"
     },
@@ -49,7 +51,7 @@
             {
                 "command": "urlMonitor.showLog",
                 "title": "Show Log",
-                "icon": "$(notebook)"
+                "icon": "$(output)"
             },
             {
                 "command": "urlMonitor.clearAllLogs",
@@ -115,6 +117,36 @@
                 "command": "urlMonitor.importCurl",
                 "title": "Import cURL",
                 "icon": "$(cloud-download)"
+            },
+            {
+                "command": "urlMonitor.pauseAll",
+                "title": "Pause All Monitoring",
+                "icon": "$(debug-pause)"
+            },
+            {
+                "command": "urlMonitor.playAll",
+                "title": "Resume All Monitoring",
+                "icon": "$(debug-start)"
+            },
+            {
+                "command": "urlMonitor.pauseItem",
+                "title": "Pause",
+                "icon": "$(debug-pause)"
+            },
+            {
+                "command": "urlMonitor.playItem",
+                "title": "Resume",
+                "icon": "$(debug-start)"
+            },
+            {
+                "command": "urlMonitor.pauseFolder",
+                "title": "Pause Folder",
+                "icon": "$(debug-pause)"
+            },
+            {
+                "command": "urlMonitor.playFolder",
+                "title": "Resume Folder",
+                "icon": "$(debug-start)"
             }
         ],
         "viewsContainers": {
@@ -150,6 +182,16 @@
                     "group": "navigation@1"
                 },
                 {
+                    "command": "urlMonitor.pauseAll",
+                    "when": "view == urlMonitor.list && !urlMonitor.allPaused",
+                    "group": "navigation@1.5"
+                },
+                {
+                    "command": "urlMonitor.playAll",
+                    "when": "view == urlMonitor.list && urlMonitor.allPaused",
+                    "group": "navigation@1.5"
+                },
+                {
                     "command": "urlMonitor.addFolder",
                     "when": "view == urlMonitor.list",
                     "group": "navigation@2"
@@ -167,7 +209,8 @@
                 {
                     "submenu": "urlMonitor.view.title.submenu",
                     "when": "view == urlMonitor.list",
-                    "group": "navigation@99"
+                    "group": "navigation@99",
+                    "icon": "$(ellipsis)"
                 },
                 {
                     "command": "urlMonitor.expandAll",
@@ -178,7 +221,7 @@
             "urlMonitor.view.title.submenu": [
                 {
                     "command": "urlMonitor.showLog",
-                    "icon": "$(notebook)",
+                    "icon": "$(output)",
                     "group": "1_log@1"
                 },
                 {
@@ -214,9 +257,39 @@
                     "group": "inline"
                 },
                 {
+                    "command": "urlMonitor.pauseFolder",
+                    "when": "viewItem == 'folder-running' || viewItem == 'folder-mixed'",
+                    "group": "inline"
+                },
+                {
+                    "command": "urlMonitor.playFolder",
+                    "when": "viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
+                    "group": "inline"
+                },
+                {
                     "command": "urlMonitor.refreshItem",
                     "when": "viewItem == 'urlItem'",
                     "group": "inline"
+                },
+                {
+                    "command": "urlMonitor.pauseItem",
+                    "when": "viewItem == 'urlItem-running'",
+                    "group": "inline"
+                },
+                {
+                    "command": "urlMonitor.playItem",
+                    "when": "viewItem == 'urlItem-paused'",
+                    "group": "inline"
+                },
+                {
+                    "command": "urlMonitor.pauseFolder",
+                    "when": "viewItem == 'folder-running' || viewItem == 'folder-mixed'",
+                    "group": "1_actions@2"
+                },
+                {
+                    "command": "urlMonitor.playFolder",
+                    "when": "viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
+                    "group": "1_actions@2"
                 },
                 {
                     "command": "urlMonitor.refreshFolder",
@@ -253,6 +326,16 @@
                 {
                     "command": "urlMonitor.refreshItem",
                     "when": "viewItem == 'urlItem'",
+                    "group": "1_actions@1"
+                },
+                {
+                    "command": "urlMonitor.pauseItem",
+                    "when": "viewItem == 'urlItem-running'",
+                    "group": "1_actions@2"
+                },
+                {
+                    "command": "urlMonitor.playItem",
+                    "when": "viewItem == 'urlItem-paused'",
                     "group": "1_actions@1"
                 },
                 {

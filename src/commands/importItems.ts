@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StorageService } from '../services/StorageService';
 import { MonitorService } from '../services/MonitorService';
-import { TreeViewItem, isUrlItem, UrlItem, FolderItem } from '../models/UrlItem';
+import { TreeViewItem, isUrlItem } from '../models/UrlItem';
 
 export class ImportItemsCommand {
     constructor(
