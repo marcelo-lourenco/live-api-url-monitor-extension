@@ -19,7 +19,7 @@
 
 ## Motivate us
 
-If this is what you were looking for, please consider giving us a [5-star rating](https://marketplace.visualstudio.com/items?itemName=mlourenco.live-api-url-monitor-extension&ssr=false#review-details).
+If this is what you were looking for, please consider giving us a [5-star rating](https://marketplace.visualstudio.com/items?itemName=mlourenco.live-api-url-monitor&ssr=false#review-details).
 
 We love suggestions. [Leave yours](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions/categories/ideas).
 
@@ -29,7 +29,7 @@ Contributions are welcome! Please feel free to submit [issues](https://github.co
 
 ## Resources and Information
 
-[Code of Condut](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=coc-ov-file#readme) • [License MIT](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=MIT-1-ov-file#readme) • [Security](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/security) • [Changelog](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/blob/master/CHANGELOG.md) • [Discussions](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions)
+[Code of Condut](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=coc-ov-file#readme) • [License MIT](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=MIT-1-ov-file#readme) • [Security](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/security/policy) • [Changelog](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/blob/master/CHANGELOG.md) • [Discussions](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions)
 
 ---
 

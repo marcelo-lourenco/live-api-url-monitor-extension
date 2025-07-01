@@ -1,4 +1,4 @@
-# API Test Builder - Code of Conduct
+# Live URL & API Monitor - Code of Conduct
 
 ## Our Pledge
 
