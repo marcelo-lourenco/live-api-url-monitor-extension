@@ -53,6 +53,10 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.pauseItem', (item: UrlItem) => this.pauseItem(item)),
             vscode.commands.registerCommand('urlMonitor.playItem', (item: UrlItem) => this.playItem(item)),
 
+            // Folder Pause/Play Commands
+            vscode.commands.registerCommand('urlMonitor.pauseFolder', (folder: FolderItem) => this.pauseFolder(folder)),
+            vscode.commands.registerCommand('urlMonitor.playFolder', (folder: FolderItem) => this.playFolder(folder)),
+
             // Item specific commands
             vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
             vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
@@ -68,11 +72,7 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.duplicateFolder', (folder: FolderItem) => this.duplicate(folder)),
             vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
             vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item)),
-            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item)),
-
-            // Folder Pause/Play Commands
-            vscode.commands.registerCommand('urlMonitor.pauseFolder', (folder: FolderItem) => this.pauseFolder(folder)),
-            vscode.commands.registerCommand('urlMonitor.playFolder', (folder: FolderItem) => this.playFolder(folder))
+            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item))
         );
     }
 
