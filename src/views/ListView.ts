@@ -71,7 +71,7 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.addFolder', (context?: FolderItem) => this.addFolder(context)),
             vscode.commands.registerCommand('urlMonitor.duplicateFolder', (folder: FolderItem) => this.duplicate(folder)),
             vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
-            vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item)),
+            vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item, false)),
             vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item))
         );
     }
@@ -273,42 +273,56 @@ export class ListView {
     }
 
     public async addFolder(context?: FolderItem) {
-        const folderName = await vscode.window.showInputBox({
-            prompt: 'Enter the name for the new folder',
-            placeHolder: 'My API Tests',
+         try {
+            const parentId = context ? context.id : null;
+            const tempName = 'New Folder';
+
+            // 1. Create a temporary folder
+            const newFolderData: Omit<FolderItem, 'id'> = {
+                type: 'folder',
+                name: tempName,
+                parentId: parentId,
+                sortOrder: 0 // StorageService will handle this
+            };
+            const newFolder = await this.storageService.addItem(newFolderData) as FolderItem;
+
+            // 2. Refresh and reveal
+            this.refresh();
+            await this.treeView.reveal(newFolder, { expand: true, focus: true, select: true });
+
+            // 3. Immediately trigger rename
+            const success = await this.renameFolder(newFolder, true);
+
+            // 4. If rename was cancelled, delete the temp folder
+            if (!success) {
+                await this.storageService.deleteItem(newFolder.id);
+                this.refresh();
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to create folder: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    public async renameFolder(item: FolderItem, isNewFolder = false): Promise<boolean> {
+        const newName = await vscode.window.showInputBox({
+            prompt: isNewFolder ? 'Enter the name for the new folder' : 'Enter the new name for the folder',
+            value: item.name,
             validateInput: value => {
                 return value.trim().length > 0 ? null : 'Folder name cannot be empty.';
             }
         });
 
-        if (folderName) {
-            try {
-                const parentId = context ? context.id : null;
-                const newFolder: Omit<FolderItem, 'id'> = {
-                    type: 'folder',
-                    name: folderName.trim(),
-                    parentId: parentId,
-                    sortOrder: 0 // Placeholder, StorageService will assign the correct value
-                };
-                await this.storageService.addItem(newFolder);
-                this.refresh();
-            } catch (error) {
-                vscode.window.showErrorMessage(`Failed to create folder: ${error instanceof Error ? error.message : String(error)}`);
-            }
+        if (newName === undefined) {
+            return false; // User cancelled
         }
-    }
 
-    public async renameFolder(item: FolderItem) {
-        const newName = await vscode.window.showInputBox({
-            prompt: 'Enter the new name for the folder',
-            value: item.name
-        });
-
-        if (newName && newName.trim() !== item.name) {
+        if (newName.trim() !== item.name) {
             const updatedFolder: FolderItem = { ...item, name: newName.trim() };
             await this.storageService.updateItem(updatedFolder);
             this.refresh();
         }
+
+        return true; // Success
     }
 
     public async copyAsCurl(item: UrlItem) {
