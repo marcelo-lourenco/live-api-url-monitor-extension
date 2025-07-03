@@ -68,4 +68,27 @@ export class LogService {
             }
         }
     }
+
+    public async clearLogsForItem(itemId: string): Promise<void> {
+        try {
+            const allLogs = await this.getLogs();
+            const logsToKeep = allLogs.filter(log => log.itemId !== itemId);
+
+            if (logsToKeep.length === allLogs.length) {
+                return; // No logs for this item were found.
+            }
+
+            if (logsToKeep.length === 0) {
+                // If no logs are left at all, just delete the file.
+                await this.clearAllLogs();
+            } else {
+                // Re-write the file with the remaining logs.
+                const newLogContent = logsToKeep.map(log => JSON.stringify(log)).join('\n') + '\n';
+                const content = new TextEncoder().encode(newLogContent);
+                await vscode.workspace.fs.writeFile(this.logFileUri, content);
+            }
+        } catch (error) {
+            console.error(`Failed to clear logs for item ${itemId}:`, error);
+        }
+    }
 }

@@ -161,6 +161,13 @@ export class AddEditView {
                     this.panel.webview.postMessage({ command: 'loadLogs', logs: logs });
                 }
                 break;
+            case 'clearLogsForItem':
+                if (message.itemId && this.panel) {
+                    await this.logService.clearLogsForItem(message.itemId);
+                    // Notify the webview that logs have been cleared so it can update the UI
+                    this.panel.webview.postMessage({ command: 'logsCleared' });
+                }
+                break;
             default:
                 break;
         }

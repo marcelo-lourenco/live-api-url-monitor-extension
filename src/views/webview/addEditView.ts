@@ -29,6 +29,7 @@ const curlOutput = document.getElementById('curl-output') as HTMLElement;
 const copyCurlButton = document.getElementById('copy-curl-button') as HTMLButtonElement;
 const logsOutput = document.getElementById('logs-output') as HTMLDivElement;
 const logSortButton = document.getElementById('log-sort-button') as HTMLButtonElement;
+const logClearButton = document.getElementById('log-clear-button') as HTMLButtonElement;
 
 // --- State Variables ---
 let isProgrammaticUpdate = false;
@@ -565,6 +566,10 @@ window.addEventListener('message', event => {
     } else if (message.command === 'loadLogs') {
         currentLogs = message.logs || [];
         renderLogs();
+    } else if (message.command === 'logsCleared') {
+        currentLogs = [];
+        renderLogs();
+        vscode.postMessage({ command: 'showInfo', message: 'Logs for this item have been cleared.' });
     }
 });
 
@@ -673,6 +678,12 @@ document.addEventListener('DOMContentLoaded', () => {
         logSortOrder = logSortOrder === 'desc' ? 'asc' : 'desc';
         updateLogSortButton();
         renderLogs();
+    });
+
+    logClearButton.addEventListener('click', () => {
+        if (currentItemId) {
+            vscode.postMessage({ command: 'clearLogsForItem', itemId: currentItemId });
+        }
     });
 
     // Initial setup
