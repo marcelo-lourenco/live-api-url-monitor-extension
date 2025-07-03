@@ -88,7 +88,7 @@ textarea {
     box-sizing: border-box;
     background: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder));
+    border: 1px solid var(--vscode-settings-textInputBorder, var(--vscode-editorGroup-border));
     border-radius: var(--input-border-radius, 3px);
 }
 
@@ -122,14 +122,14 @@ button#save:hover {
 }
 
 button.secondary {
-    background: transparent;
-    color: var(--vscode-button-foreground);
-    border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder));
+    background: var(--vscode-button-secondaryBackground, transparent);
+    color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+    border: 1px solid var(--vscode-settings-textInputBorder, var(--vscode-editorGroup-border));
 }
 
 button.secondary:hover {
-    background: var(--vscode-button-hoverBackground);
-    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
+    color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
 }
 
 .advanced {
