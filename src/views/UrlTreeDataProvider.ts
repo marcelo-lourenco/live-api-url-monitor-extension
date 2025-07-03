@@ -95,8 +95,8 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
 
             if (element.isPaused) {
                 treeItem.contextValue = 'urlItem-paused';
-                iconId = 'debug-pause';
-                iconColorId = 'disabledForeground';
+                iconId = 'circle-slash';
+                iconColorId = 'disabledForeground'; // Cor cinza para estado pausado
             } else {
                 treeItem.contextValue = 'urlItem-running';
                 if (element.lastStatus === 'up') {
@@ -137,36 +137,37 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             const treeItem = new vscode.TreeItem(element.name.toUpperCase(), vscode.TreeItemCollapsibleState.Collapsed);
             treeItem.id = element.id;
 
-            if (folderPauseState === 'empty') {
-                treeItem.contextValue = 'folder';
-            } else if (folderPauseState === 'paused') {
-                treeItem.contextValue = 'folder-paused';
-            } else if (folderPauseState === 'mixed') {
-                treeItem.contextValue = 'folder-mixed';
-            } else { // running
-                treeItem.contextValue = 'folder-running';
-            }
-
             let iconId: string;
             let iconColorId: string | undefined;
 
-            switch (folderHealthStatus) {
-                case 'up':
-                    iconId = 'folder-active';
-                    iconColorId = 'testing.iconPassed'; // Green
-                    break;
-                case 'down':
-                    iconId = 'folder-active';
-                    iconColorId = 'testing.iconFailed'; // Red
-                    break;
-                default: // 'unknown'
-                    iconId = 'folder';
-                    iconColorId = undefined; // Use default theme color
-            }
-
+            // O estado visual de uma pasta é determinado primeiro pelo seu estado de pausa e, em seguida, pela saúde de seus filhos ativos.
             if (folderPauseState === 'paused') {
+                // Se todos os filhos estiverem pausados, a pasta é exibida como pausada (cinza).
+                treeItem.contextValue = 'folder-paused';
                 iconId = 'folder';
                 iconColorId = 'disabledForeground';
+            } else {
+                // Se a pasta tiver itens ativos, sua cor reflete o status deles.
+                switch (folderHealthStatus) {
+                    case 'up':
+                        iconId = 'folder-active';
+                        iconColorId = 'testing.iconPassed'; // Verde
+                        break;
+                    case 'down':
+                        iconId = 'folder-active';
+                        iconColorId = 'testing.iconFailed'; // Vermelho
+                        break;
+                    default: // 'unknown' ou vazia
+                        iconId = 'folder';
+                        iconColorId = undefined; // Usa a cor padrão do tema
+                }
+
+                // Define o contextValue para os comandos do menu
+                if (folderPauseState === 'running') {
+                    treeItem.contextValue = 'folder-running';
+                } else { // 'mixed' ou 'empty'
+                    treeItem.contextValue = folderPauseState === 'mixed' ? 'folder-mixed' : 'folder';
+                }
             }
 
             treeItem.iconPath = new vscode.ThemeIcon(iconId, iconColorId ? new vscode.ThemeColor(iconColorId) : undefined);
