@@ -51,7 +51,7 @@
             {
                 "command": "urlMonitor.showLog",
                 "title": "Show Log",
-                "icon": "$(output)"
+                "icon": "$(list-flat)"
             },
             {
                 "command": "urlMonitor.clearAllLogs",
@@ -221,7 +221,7 @@
             "urlMonitor.view.title.submenu": [
                 {
                     "command": "urlMonitor.showLog",
-                    "icon": "$(output)",
+                    "icon": "$(list-flat)",
                     "group": "1_log@1"
                 },
                 {

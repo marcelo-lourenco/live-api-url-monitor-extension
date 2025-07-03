@@ -336,16 +336,23 @@ option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
     font-size: 1em;
 }
 
-.sidebar-close-button {
+.sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.action-button {
     background: transparent;
     border: none;
     color: var(--vscode-icon-foreground);
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     padding: 5px;
+    border-radius: 3px;
 }
 
-.sidebar-close-button:hover {
+.action-button:hover {
     background-color: var(--vscode-toolbar-hoverBackground);
 }
 
@@ -380,4 +387,52 @@ option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
 
 #copy-curl-button {
     margin-top: 10px;
+}
+
+/* --- Log Panel Styles --- */
+.log-entry {
+    border-bottom: 1px solid var(--vscode-editorGroup-border);
+    padding: 8px 0;
+    font-size: 0.9em;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.log-status {
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+.log-status.up {
+    background-color: var(--vscode-terminal-ansiGreen);
+    color: var(--vscode-editor-background);
+}
+
+.log-status.down {
+    background-color: var(--vscode-terminal-ansiRed);
+    color: var(--vscode-editor-background);
+}
+
+.log-meta {
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+}
+
+.log-error {
+    color: var(--vscode-errorForeground);
+    margin-top: 5px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }

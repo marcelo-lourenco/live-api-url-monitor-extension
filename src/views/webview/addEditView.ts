@@ -27,9 +27,15 @@ const sidebar = document.querySelector('.sidebar') as HTMLElement;
 const sidebarToolbar = document.querySelector('.sidebar-toolbar') as HTMLElement;
 const curlOutput = document.getElementById('curl-output') as HTMLElement;
 const copyCurlButton = document.getElementById('copy-curl-button') as HTMLButtonElement;
+const logsOutput = document.getElementById('logs-output') as HTMLDivElement;
+const logSortButton = document.getElementById('log-sort-button') as HTMLButtonElement;
 
+// --- State Variables ---
 let isProgrammaticUpdate = false;
 let activeSidebarPanel: string | null = null;
+let currentItemId: string | null = null;
+let currentLogs: any[] = [];
+let logSortOrder: 'asc' | 'desc' = 'desc';
 
 const methodColorMap: Record<string, string> = {
     'GET': '#6bdd9a', 'POST': '#ffe47e', 'PUT': '#74aef6', 'DELETE': '#f79a8e',
@@ -168,6 +174,11 @@ function switchAuthView(authType: string) {
 
 function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
     const isEditMode = 'id' in item;
+    currentItemId = isEditMode ? item.id : null;
+    currentLogs = [];
+    logSortOrder = 'desc';
+    updateLogSortButton();
+
     formTitle.textContent = isEditMode ? 'Edit URL Item' : 'Add URL Item';
 
     const itemToRender = item;
@@ -386,6 +397,8 @@ function openSidebarPanel(panelName: string) {
         // Generate content for the panel
         if (panelName === 'curl') {
             generateCurlCommand();
+        } else if (panelName === 'logs') {
+            requestItemLogs();
         }
     }
 }
@@ -471,11 +484,87 @@ function updateCurlOnChange() {
     }
 }
 
+function requestItemLogs() {
+    if (currentItemId) {
+        logsOutput.innerHTML = '<p>Loading logs...</p>';
+        vscode.postMessage({ command: 'getLogsForItem', itemId: currentItemId });
+    } else {
+        logsOutput.innerHTML = '<p>Logs are available for saved items only.</p>';
+    }
+}
+
+function renderLogs() {
+    if (!currentLogs || currentLogs.length === 0) {
+        logsOutput.innerHTML = '<p>No recent logs found for this item.</p>';
+        return;
+    }
+
+    // Sort the logs based on the current order
+    const sortedLogs = [...currentLogs].sort((a, b) => {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        return logSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    logsOutput.innerHTML = ''; // Clear previous content
+
+    sortedLogs.forEach(log => {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+
+        const statusClass = log.status === 'up' ? 'up' : 'down';
+        const timestamp = new Date(log.timestamp).toLocaleString();
+
+        let errorHtml = '';
+        if (log.status === 'down' && log.error) {
+            errorHtml = `<div class="log-error">${escapeHtml(log.error)}</div>`;
+        }
+
+        logEntry.innerHTML = `
+            <div class="log-header">
+                <span class="log-status ${statusClass}">${log.status}</span>
+                <span class="log-meta">${timestamp}</span>
+            </div>
+            <div class="log-meta">
+                Status: ${log.statusCode || 'N/A'} | Duration: ${log.durationMs}ms
+            </div>
+            ${errorHtml}
+        `;
+        logsOutput.appendChild(logEntry);
+    });
+}
+
+function updateLogSortButton() {
+    const icon = logSortButton.querySelector('i');
+    if (icon) {
+        if (logSortOrder === 'desc') {
+            icon.className = 'codicon codicon-arrow-down';
+            logSortButton.title = 'Sort: Newest First';
+        } else {
+            icon.className = 'codicon codicon-arrow-up';
+            logSortButton.title = 'Sort: Oldest First';
+        }
+    }
+}
+
+function escapeHtml(unsafe: string): string {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // --- Event Listeners ---
 window.addEventListener('message', event => {
     const message = event.data;
     if (message.command === 'loadData') {
         initializeForm(message.data);
+    } else if (message.command === 'loadLogs') {
+        currentLogs = message.logs || [];
+        renderLogs();
     }
 });
 
@@ -578,6 +667,12 @@ document.addEventListener('DOMContentLoaded', () => {
             navigator.clipboard.writeText(curlOutput.textContent);
             vscode.postMessage({ command: 'showInfo', message: 'cURL command copied to clipboard.' });
         }
+    });
+
+    logSortButton.addEventListener('click', () => {
+        logSortOrder = logSortOrder === 'desc' ? 'asc' : 'desc';
+        updateLogSortButton();
+        renderLogs();
     });
 
     // Initial setup

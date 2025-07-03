@@ -2,13 +2,17 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
+import { LogService } from '../services/LogService';
 
 export class AddEditView {
     private panel: vscode.WebviewPanel | undefined;
     private resolvePromise: ((value: UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined) => void) | undefined;
     private currentItemForForm: (UrlItem | Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'>) & { parentId?: string | null } | undefined;
 
-    constructor(private context: vscode.ExtensionContext) { }
+    constructor(
+        private context: vscode.ExtensionContext,
+        private logService: LogService
+    ) { }
 
     public async showAddForm(parentId: string | null = null): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
         this.currentItemForForm = { ...createDefaultUrlItem(), parentId };
@@ -91,7 +95,7 @@ export class AddEditView {
         });
     }
 
-    private handleMessage(message: any) {
+    private async handleMessage(message: any) {
         switch (message.command) {
             case 'save':
                 if (this.resolvePromise) {
@@ -148,8 +152,16 @@ export class AddEditView {
             case 'showError':
                 vscode.window.showErrorMessage(message.message);
                 break;
+            case 'showInfo':
+                vscode.window.showInformationMessage(message.message);
+                break;
+            case 'getLogsForItem':
+                if (message.itemId && this.panel) {
+                    const logs = await this.logService.getLogs([message.itemId]);
+                    this.panel.webview.postMessage({ command: 'loadLogs', logs: logs });
+                }
+                break;
             default:
-                // vscode.window.showWarningMessage(`Extension: Received unknown message from webview: ${JSON.stringify(message)}`); // Removed debug message
                 break;
         }
     }

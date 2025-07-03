@@ -219,19 +219,42 @@
                 <button class="sidebar-tool-button" data-panel="curl" title="Generate cURL command">
                     <i class="codicon codicon-code"></i>
                 </button>
+                <button class="sidebar-tool-button" data-panel="logs" title="View Recent Logs">
+                    <i class="codicon codicon-history"></i>
+                </button>
                 <!-- Add other icons here later -->
             </div>
             <div class="sidebar-content">
                 <div class="sidebar-panel" id="sidebar-panel-curl" style="display: none;">
                     <div class="sidebar-header">
                         <h3>cURL Command</h3>
-                        <button class="sidebar-close-button" title="Close Sidebar">
-                            <i class="codicon codicon-close"></i>
-                        </button>
+                        <div class="sidebar-header-actions">
+                            <button class="sidebar-close-button action-button" title="Close Sidebar">
+                                <i class="codicon codicon-close"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="sidebar-body">
                         <pre><code id="curl-output"></code></pre>
                         <button id="copy-curl-button" class="secondary small-button">Copy Command</button>
+                    </div>
+                </div>
+                <div class="sidebar-panel" id="sidebar-panel-logs" style="display: none;">
+                    <div class="sidebar-header">
+                        <h3>Recent Logs</h3>
+                        <div class="sidebar-header-actions">
+                            <button id="log-sort-button" class="action-button" title="Sort: Newest First">
+                                <i class="codicon codicon-arrow-down"></i>
+                            </button>
+                            <button class="sidebar-close-button action-button" title="Close Sidebar">
+                                <i class="codicon codicon-close"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="sidebar-body">
+                        <div id="logs-output">
+                            <!-- Logs will be rendered here -->
+                        </div>
                     </div>
                 </div>
                 <!-- Add other panels here later -->
