@@ -30,6 +30,8 @@ const copyCurlButton = document.getElementById('copy-curl-button') as HTMLButton
 const logsOutput = document.getElementById('logs-output') as HTMLDivElement;
 const logSortButton = document.getElementById('log-sort-button') as HTMLButtonElement;
 const logClearButton = document.getElementById('log-clear-button') as HTMLButtonElement;
+const logRefreshButton = document.getElementById('log-refresh-button') as HTMLButtonElement;
+const logFilterErrorsButton = document.getElementById('log-filter-errors-button') as HTMLButtonElement;
 
 // --- State Variables ---
 let isProgrammaticUpdate = false;
@@ -37,6 +39,7 @@ let activeSidebarPanel: string | null = null;
 let currentItemId: string | null = null;
 let currentLogs: any[] = [];
 let logSortOrder: 'asc' | 'desc' = 'desc';
+let showOnlyErrors = false;
 
 const methodColorMap: Record<string, string> = {
     'GET': '#6bdd9a', 'POST': '#ffe47e', 'PUT': '#74aef6', 'DELETE': '#f79a8e',
@@ -178,6 +181,8 @@ function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
     currentItemId = isEditMode ? item.id : null;
     currentLogs = [];
     logSortOrder = 'desc';
+    showOnlyErrors = false;
+    logFilterErrorsButton.classList.remove('active');
     updateLogSortButton();
 
     formTitle.textContent = isEditMode ? 'Edit URL Item' : 'Add URL Item';
@@ -412,26 +417,29 @@ function generateCurlCommand() {
     }
 
     let curlCommand = `curl --location --request ${data.method} `;
-    let url = data.url;
 
-    // Add query parameters from the dedicated tab
+    // Start with the base URL, stripping any existing query string to avoid duplication.
+    const baseUrl = data.url.split('?')[0];
+    const params = new URLSearchParams();
+
+    // Rebuild the query string from the "Parameters" tab. This is the single source of truth.
     if (data.queryParams && data.queryParams.length > 0) {
-        const query = data.queryParams
-            .filter(p => p.key)
-            .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
-            .join('&');
-        if (query) {
-            url += `${url.includes('?') ? '&' : '?'}${query}`;
-        }
+        data.queryParams.forEach(p => {
+            if (p.key) {
+                params.append(p.key, p.value);
+            }
+        });
     }
 
     // Handle API Key in query params
     if (data.auth.type === 'apikey' && data.auth.addTo === 'query' && data.auth.key) {
-        const query = `${encodeURIComponent(data.auth.key)}=${encodeURIComponent(data.auth.value)}`;
-        url += `${url.includes('?') ? '&' : '?'}${query}`;
+        params.append(data.auth.key, data.auth.value);
     }
 
-    curlCommand += `'${url}'`;
+    const queryString = params.toString();
+    const finalUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+
+    curlCommand += `'${finalUrl}'`;
 
     // Add headers
     const headers = { ...(data.headers || {}) };
@@ -495,13 +503,21 @@ function requestItemLogs() {
 }
 
 function renderLogs() {
-    if (!currentLogs || currentLogs.length === 0) {
-        logsOutput.innerHTML = '<p>No recent logs found for this item.</p>';
+    const logsToRender = showOnlyErrors
+        ? currentLogs.filter(log => log.status === 'down')
+        : [...currentLogs];
+
+    if (!logsToRender || logsToRender.length === 0) {
+        if (showOnlyErrors && currentLogs.length > 0) {
+            logsOutput.innerHTML = '<p>No error logs found for this item.</p>';
+        } else {
+            logsOutput.innerHTML = '<p>No recent logs found for this item.</p>';
+        }
         return;
     }
 
     // Sort the logs based on the current order
-    const sortedLogs = [...currentLogs].sort((a, b) => {
+    const sortedLogs = logsToRender.sort((a, b) => {
         const dateA = new Date(a.timestamp).getTime();
         const dateB = new Date(b.timestamp).getTime();
         return logSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -677,6 +693,16 @@ document.addEventListener('DOMContentLoaded', () => {
     logSortButton.addEventListener('click', () => {
         logSortOrder = logSortOrder === 'desc' ? 'asc' : 'desc';
         updateLogSortButton();
+        renderLogs();
+    });
+
+    logRefreshButton.addEventListener('click', () => {
+        requestItemLogs();
+    });
+
+    logFilterErrorsButton.addEventListener('click', () => {
+        showOnlyErrors = !showOnlyErrors;
+        logFilterErrorsButton.classList.toggle('active', showOnlyErrors);
         renderLogs();
     });
 

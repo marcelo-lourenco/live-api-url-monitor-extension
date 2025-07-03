@@ -165,9 +165,9 @@ export class MonitorService {
             const result = await this.performCheckLogic(item);
             await this.processStatusUpdate(item, result);
         });
-    
+
         await Promise.all(checkPromises);
-    
+
         // After all are done, trigger a single notification/UI refresh
         this.updateErrorStatus();
     }
@@ -278,7 +278,7 @@ export class MonitorService {
 
     public async forceCheckAllItems(): Promise<void> {
         // Respects paused state by filtering within forceCheckItems
-        const items = await this.storageService.getAllUrlItems(); 
+        const items = await this.storageService.getAllUrlItems();
         await this.forceCheckItems(items);
     }
 }

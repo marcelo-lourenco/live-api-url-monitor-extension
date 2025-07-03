@@ -44,7 +44,7 @@ export class StorageService {
                 itemChanged = true;
             }
 
-            
+
             if (itemChanged) {
                 needsUpdate = true;
             }

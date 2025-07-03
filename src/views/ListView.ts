@@ -273,7 +273,7 @@ export class ListView {
     }
 
     public async addFolder(context?: FolderItem) {
-         try {
+        try {
             const parentId = context ? context.id : null;
             const tempName = 'New Folder';
 

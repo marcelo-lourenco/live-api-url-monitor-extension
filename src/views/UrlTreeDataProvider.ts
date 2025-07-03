@@ -39,11 +39,11 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
      */
     private getFolderStatus(folderId: string, allItems: TreeViewItem[]): 'up' | 'down' | 'unknown' {
         const descendants = this.getDescendantUrlItems(folderId, allItems)
-                                .filter(item => !item.isPaused); // Only consider active items for status
+            .filter(item => !item.isPaused); // Only consider active items for status
 
         if (descendants.length === 0) {
             // If there are paused items, but no active ones, it's still 'unknown' but not an error.
-            return 'unknown'; 
+            return 'unknown';
         }
 
         if (descendants.some(item => item.lastStatus === 'down')) {

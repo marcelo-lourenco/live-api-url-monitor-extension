@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; 
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; 
                  style-src {{cspSource}} 'unsafe-inline'; 
                  font-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -133,8 +132,8 @@
                             <!-- Basic Auth -->
                             <div id="auth-basic" class="auth-fields" style="display: none;">
                                 <div class="form-row">
-                                    <div class="form-group"><label for="basicUsername">Username</label><input type="text"
-                                            id="basicUsername"></div>
+                                    <div class="form-group"><label for="basicUsername">Username</label><input
+                                            type="text" id="basicUsername"></div>
                                     <div class="form-group"><label for="basicPassword">Password</label><input
                                             type="password" id="basicPassword"></div>
                                 </div>
@@ -150,11 +149,13 @@
                                         id="oauth2Token" rows="3"></textarea></div>
                                 <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input
                                         type="text" id="oauth2HeaderPrefix" value="Bearer"></div>
-                                <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.</p>
+                                <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.
+                                </p>
                             </div>
                             <!-- AWS Signature -->
                             <div id="auth-awsv4" class="auth-fields" style="display: none;">
-                                <p>AWS Signature is not yet fully implemented for execution but settings will be saved.</p>
+                                <p>AWS Signature is not yet fully implemented for execution but settings will be saved.
+                                </p>
                             </div>
                             <!-- OAuth 1.0 -->
                             <div id="auth-oauth1" class="auth-fields" style="display: none;">
@@ -196,7 +197,8 @@
                             <div class="form-group col-2">
                                 <div id="div-beautify-btn" style="display: none;">
                                     <label for="beautify-btn">&nbsp;</label>
-                                    <button type="button" id="beautify-btn" class="secondary small-button">Beautify</button>
+                                    <button type="button" id="beautify-btn"
+                                        class="secondary small-button">Beautify</button>
                                 </div>
                             </div>
                             <div class="form-group col-9">
@@ -246,6 +248,13 @@
                             <button id="log-sort-button" class="action-button" title="Sort: Newest First">
                                 <i class="codicon codicon-arrow-down"></i>
                             </button>
+                            <button id="log-refresh-button" class="action-button" title="Refresh Logs">
+                                <i class="codicon codicon-refresh"></i>
+                            </button>
+                            <button id="log-filter-errors-button" class="action-button" title="Show Only Errors">
+                                <i class="codicon codicon-filter"></i>
+                            </button>
+                            <div class="action-separator"></div>
                             <button id="log-clear-button" class="action-button" title="Clear Logs for this Item">
                                 <i class="codicon codicon-clear-all"></i>
                             </button>

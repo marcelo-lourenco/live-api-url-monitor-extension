@@ -4,7 +4,8 @@ body {
     font-family: var(--vscode-font-family);
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
-    overflow: hidden; /* Prevent body scrollbars */
+    overflow: hidden;
+    /* Prevent body scrollbars */
 }
 
 .header {
@@ -18,7 +19,8 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    height: 56px; /* Fixed height */
+    height: 56px;
+    /* Fixed height */
     box-sizing: border-box;
 }
 
@@ -35,13 +37,15 @@ body {
 
 .main-wrapper {
     display: flex;
-    height: calc(100vh - 56px); /* Full height minus header */
+    height: calc(100vh - 56px);
+    /* Full height minus header */
 }
 
 .form-container {
     padding: 15px;
     overflow-y: auto;
-    flex-grow: 1; /* Take up remaining space */
+    flex-grow: 1;
+    /* Take up remaining space */
     box-sizing: border-box;
 }
 
@@ -125,18 +129,53 @@ button.secondary:hover {
     flex: 1;
 }
 
-.form-row .col-1 { flex: 1; }
-.form-row .col-2 { flex: 2; }
-.form-row .col-3 { flex: 3; }
-.form-row .col-4 { flex: 4; }
-.form-row .col-5 { flex: 5; }
-.form-row .col-6 { flex: 6; }
-.form-row .col-7 { flex: 7; }
-.form-row .col-8 { flex: 8; }
-.form-row .col-9 { flex: 9; }
-.form-row .col-10 { flex: 10; }
-.form-row .col-11 { flex: 11; }
-.form-row .col-12 { flex: 12; }
+.form-row .col-1 {
+    flex: 1;
+}
+
+.form-row .col-2 {
+    flex: 2;
+}
+
+.form-row .col-3 {
+    flex: 3;
+}
+
+.form-row .col-4 {
+    flex: 4;
+}
+
+.form-row .col-5 {
+    flex: 5;
+}
+
+.form-row .col-6 {
+    flex: 6;
+}
+
+.form-row .col-7 {
+    flex: 7;
+}
+
+.form-row .col-8 {
+    flex: 8;
+}
+
+.form-row .col-9 {
+    flex: 9;
+}
+
+.form-row .col-10 {
+    flex: 10;
+}
+
+.form-row .col-11 {
+    flex: 11;
+}
+
+.form-row .col-12 {
+    flex: 12;
+}
 
 textarea {
     min-height: 80px;
@@ -217,13 +256,40 @@ textarea {
     font-weight: bold;
 }
 
-option[data-method="GET"] { color: #6bdd9a; font-weight: bold; }
-option[data-method="POST"] { color: #ffe47e; font-weight: bold; }
-option[data-method="PUT"] { color: #74aef6; font-weight: bold; }
-option[data-method="DELETE"] { color: #f79a8e; font-weight: bold; }
-option[data-method="PATCH"] { color: #c0a8e1; font-weight: bold; }
-option[data-method="OPTIONS"] { color: #f15eb0; font-weight: bold; }
-option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
+option[data-method="GET"] {
+    color: #6bdd9a;
+    font-weight: bold;
+}
+
+option[data-method="POST"] {
+    color: #ffe47e;
+    font-weight: bold;
+}
+
+option[data-method="PUT"] {
+    color: #74aef6;
+    font-weight: bold;
+}
+
+option[data-method="DELETE"] {
+    color: #f79a8e;
+    font-weight: bold;
+}
+
+option[data-method="PATCH"] {
+    color: #c0a8e1;
+    font-weight: bold;
+}
+
+option[data-method="OPTIONS"] {
+    color: #f15eb0;
+    font-weight: bold;
+}
+
+option[data-method="HEAD"] {
+    color: #6bdd9a;
+    font-weight: bold;
+}
 
 /* Tab content */
 .tab-content {
@@ -342,6 +408,13 @@ option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
     gap: 2px;
 }
 
+.action-separator {
+    width: 1px;
+    height: 16px;
+    background-color: var(--vscode-editorGroup-border);
+    margin: 0 4px;
+}
+
 .action-button {
     background: transparent;
     border: none;
@@ -354,6 +427,11 @@ option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
 
 .action-button:hover {
     background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.action-button.active {
+    background-color: var(--vscode-toolbar-activeBackground, var(--vscode-list-activeSelectionBackground));
+    color: var(--vscode-list-activeSelectionForeground);
 }
 
 .sidebar-body {
