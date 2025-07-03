@@ -24,6 +24,7 @@ const logLevelSelect = document.getElementById('log-level') as HTMLSelectElement
 
 // --- Sidebar Elements ---
 const sidebar = document.querySelector('.sidebar') as HTMLElement;
+const resizer = document.getElementById('resizer') as HTMLElement;
 const sidebarToolbar = document.querySelector('.sidebar-toolbar') as HTMLElement;
 const curlOutput = document.getElementById('curl-output') as HTMLElement;
 const copyCurlButton = document.getElementById('copy-curl-button') as HTMLButtonElement;
@@ -36,6 +37,7 @@ const logFilterErrorsButton = document.getElementById('log-filter-errors-button'
 // --- State Variables ---
 let isProgrammaticUpdate = false;
 let activeSidebarPanel: string | null = null;
+let lastSidebarWidth = 400; // Default expanded width, will be updated on resize
 let currentItemId: string | null = null;
 let currentLogs: any[] = [];
 let logSortOrder: 'asc' | 'desc' = 'desc';
@@ -366,7 +368,13 @@ function gatherFormData(forCurl = false) {
 // --- Sidebar Logic ---
 
 function closeSidebar() {
+    // Save the current width before closing, if it was expanded
+    if (sidebar.classList.contains('expanded')) {
+        lastSidebarWidth = sidebar.offsetWidth;
+    }
     sidebar.classList.remove('expanded');
+    resizer.classList.remove('visible');
+    sidebar.style.flexBasis = '40px'; // Collapse to toolbar width
     activeSidebarPanel = null;
     document.querySelectorAll('.sidebar-tool-button.active').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.sidebar-panel.active').forEach(panel => {
@@ -399,6 +407,8 @@ function openSidebarPanel(panelName: string) {
         panel.style.display = 'flex';
         activeSidebarPanel = panelName;
         sidebar.classList.add('expanded');
+        resizer.classList.add('visible');
+        sidebar.style.flexBasis = `${lastSidebarWidth}px`; // Restore last known width
 
         // Generate content for the panel
         if (panelName === 'curl') {
@@ -710,6 +720,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentItemId) {
             vscode.postMessage({ command: 'clearLogsForItem', itemId: currentItemId });
         }
+    });
+
+    // Resizer Logic
+    let isResizing = false;
+
+    const mouseMoveHandler = (e: MouseEvent) => {
+        if (!isResizing) return;
+        // Calculate the new width based on mouse position from the right edge
+        const newWidth = window.innerWidth - e.clientX;
+        // Apply constraints
+        const minWidth = 250;
+        const maxWidth = window.innerWidth - 300; // Ensure form has at least 300px
+        const constrainedWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+        sidebar.style.flexBasis = `${constrainedWidth}px`;
+    };
+
+    const mouseUpHandler = () => {
+        isResizing = false;
+        resizer.classList.remove('is-resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        // Save the final width for the next time the sidebar is opened
+        if (sidebar.classList.contains('expanded')) {
+            lastSidebarWidth = sidebar.offsetWidth;
+        }
+
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+    };
+
+    resizer.addEventListener('mousedown', (e: MouseEvent) => {
+        e.preventDefault(); // Prevent text selection during drag
+        isResizing = true;
+        resizer.classList.add('is-resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
     });
 
     // Initial setup

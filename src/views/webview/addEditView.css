@@ -41,6 +41,24 @@ body {
     /* Full height minus header */
 }
 
+.resizer {
+    flex: 0 0 3px;
+    cursor: col-resize;
+    background-color: var(--vscode-editorGroup-border);
+    z-index: 5;
+    display: none; /* Hidden by default, shown via JS */
+    transition: background-color 0.1s ease-in-out;
+}
+
+.resizer.visible {
+    display: block;
+}
+
+.resizer:hover,
+.resizer.is-resizing {
+    background-color: var(--vscode-focusBorder);
+}
+
 .form-container {
     padding: 15px;
     overflow-y: auto;
@@ -316,16 +334,15 @@ option[data-method="HEAD"] {
 /* --- Sidebar Styles --- */
 .sidebar {
     flex-shrink: 0;
-    width: 40px;
+    flex-basis: 40px; /* Use flex-basis for resizable width */
     background-color: var(--vscode-sideBar-background);
     border-left: 1px solid var(--vscode-editorGroup-border);
     display: flex;
-    transition: width 0.2s ease-in-out;
     overflow: hidden;
 }
 
 .sidebar.expanded {
-    width: 400px;
+    border-left: none; /* The resizer will act as the border */
 }
 
 .sidebar-toolbar {
