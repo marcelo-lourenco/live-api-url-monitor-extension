@@ -32,12 +32,7 @@ export class AddEditView {
         }
 
         // Set default for items created before this feature
-        if (!itemToEdit.logLevel) {
-            itemToEdit.logLevel = 'all';
-        }
-
-        // Set default for items created before this feature
-        if (!itemToEdit.logLevel) {
+        if (itemToEdit.logLevel === undefined) {
             itemToEdit.logLevel = 'all';
         }
 
@@ -170,7 +165,10 @@ export class AddEditView {
         const cssUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'addEditView.css'));
         const nonce = getNonce();
 
-        htmlContent = htmlContent.replace(/{{cspSource}}/g, panel.webview.cspSource);
+        // Allow loading resources from local extension folders and from the codicon CDN
+        const cspSource = `${panel.webview.cspSource} https://cdn.jsdelivr.net`;
+
+        htmlContent = htmlContent.replace(/{{cspSource}}/g, cspSource);
         htmlContent = htmlContent.replace(/{{nonce}}/g, nonce);
         htmlContent = htmlContent.replace('{{cssUri}}', cssUri.toString());
         htmlContent = htmlContent.replace('{{jsUri}}', scriptUri.toString());

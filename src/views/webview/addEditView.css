@@ -4,7 +4,9 @@ body {
     font-family: var(--vscode-font-family);
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
+    overflow: hidden; /* Prevent body scrollbars */
 }
+
 .header {
     padding: 10px 15px;
     background: var(--vscode-sideBar-background, var(--vscode-editorGroupHeader-tabsBackground));
@@ -16,30 +18,49 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 6px;
+    height: 56px; /* Fixed height */
+    box-sizing: border-box;
 }
+
 .header-actions {
     display: flex;
     gap: 10px;
     align-items: center;
 }
+
 .header h2 {
     margin: 0;
     color: var(--vscode-sideBarTitle-foreground, var(--vscode-tab-activeForeground));
 }
+
+.main-wrapper {
+    display: flex;
+    height: calc(100vh - 56px); /* Full height minus header */
+}
+
 .form-container {
     padding: 15px;
     overflow-y: auto;
-   /*  height: calc(100vh - 60px - 70px);  *//* Adjusted for header and buttons */
+    flex-grow: 1; /* Take up remaining space */
     box-sizing: border-box;
 }
-.form-group { margin-bottom: 15px; }
-label { display: block; margin-bottom: 5px; font-weight: bold; }
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
 input[type="text"],
 input[type="url"],
 input[type="number"],
 input[type="password"],
 select,
-textarea{
+textarea {
     width: 100%;
     padding: 6px;
     box-sizing: border-box;
@@ -48,24 +69,14 @@ textarea{
     border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder));
     border-radius: var(--input-border-radius, 3px);
 }
-input:focus, select:focus, textarea:focus {
+
+input:focus,
+select:focus,
+textarea:focus {
     outline: 1px solid var(--vscode-focusBorder);
     border-color: var(--vscode-focusBorder);
 }
-.buttons {
-    padding: 15px;
-    border-top: 1px solid var(--vscode-editorGroup-border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    position: sticky;
-    bottom: 0;
-    background-color: var(--vscode-editor-background);
-    z-index: 10;
-    height: 70px;
-    box-sizing: border-box;
-    align-items: center;
-}
+
 button {
     padding: 8px 15px;
     cursor: pointer;
@@ -74,28 +85,46 @@ button {
     border: 1px solid var(--vscode-button-border, transparent);
     border-radius: var(--input-border-radius, 3px);
 }
+
 button:hover {
     background: var(--vscode-button-hoverBackground);
 }
+
 button#save {
     background: var(--vscode-button-primaryBackground, var(--vscode-button-background));
     color: var(--vscode-button-primaryForeground, var(--vscode-button-foreground));
 }
+
 button#save:hover {
     background: var(--vscode-button-primaryHoverBackground, var(--vscode-button-hoverBackground));
 }
+
 button.secondary {
     background: transparent;
     color: var(--vscode-button-foreground);
     border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder));
 }
+
 button.secondary:hover {
     background: var(--vscode-button-hoverBackground);
     color: var(--vscode-button-foreground);
 }
-.advanced { margin-top: 10px; border-top: 1px solid var(--vscode-editorGroup-border); padding-top: 10px; }
-.form-row { display: flex; gap: 15px; }
-.form-row .form-group { flex: 1; }
+
+.advanced {
+    margin-top: 10px;
+    border-top: 1px solid var(--vscode-editorGroup-border);
+    padding-top: 10px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
 .form-row .col-1 { flex: 1; }
 .form-row .col-2 { flex: 2; }
 .form-row .col-3 { flex: 3; }
@@ -108,36 +137,46 @@ button.secondary:hover {
 .form-row .col-10 { flex: 10; }
 .form-row .col-11 { flex: 11; }
 .form-row .col-12 { flex: 12; }
-textarea { min-height: 80px; resize: vertical; }
+
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
 .interval-group {
     display: flex;
     align-items: center;
     gap: 5px;
 }
+
 .interval-group input[type="number"] {
     flex-grow: 1;
-    /* width: auto; */
     min-width: 50px;
 }
- .interval-group select {
+
+.interval-group select {
     width: auto;
     flex-shrink: 0;
- }
- .interval-group input[type="number"]::-webkit-outer-spin-button,
- .interval-group input[type="number"]::-webkit-inner-spin-button {
-     -webkit-appearance: none;
-     margin: 0;
 }
+
+.interval-group input[type="number"]::-webkit-outer-spin-button,
+.interval-group input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 /* Tabs styling */
 .tabs {
     margin-top: 20px;
     border: 1px solid var(--vscode-editorGroup-border);
     border-radius: var(--input-border-radius, 3px);
 }
+
 .tab-buttons {
     display: flex;
     border-bottom: 1px solid var(--vscode-editorGroup-border);
 }
+
 .tab-button {
     flex: 1;
     padding: 10px 15px;
@@ -148,26 +187,36 @@ textarea { min-height: 80px; resize: vertical; }
     cursor: pointer;
     font-weight: bold;
     text-align: center;
-    border-radius: 0; /* Override default button radius */
+    border-radius: 0;
+    /* Override default button radius */
 }
+
 .tab-button:last-child {
     border-right: none;
 }
+
 .tab-button.active {
     background: var(--vscode-tab-activeBackground);
     color: var(--vscode-tab-activeForeground);
     border-bottom: 2px solid var(--vscode-tab-activeBorder);
-    margin-bottom: -1px; /* Overlap border */
+    margin-bottom: -1px;
+    /* Overlap border */
 }
+
 .tab-button:hover:not(.active) {
     background: var(--vscode-tab-hoverBackground);
 }
+
 .auth-fields {
     border-left: 2px solid var(--vscode-input-border, var(--vscode-contrastBorder));
     padding-left: 15px;
 }
+
 /* Method-specific colors */
-#method { font-weight: bold; }
+#method {
+    font-weight: bold;
+}
+
 option[data-method="GET"] { color: #6bdd9a; font-weight: bold; }
 option[data-method="POST"] { color: #ffe47e; font-weight: bold; }
 option[data-method="PUT"] { color: #74aef6; font-weight: bold; }
@@ -175,21 +224,160 @@ option[data-method="DELETE"] { color: #f79a8e; font-weight: bold; }
 option[data-method="PATCH"] { color: #c0a8e1; font-weight: bold; }
 option[data-method="OPTIONS"] { color: #f15eb0; font-weight: bold; }
 option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
+
 /* Tab content */
 .tab-content {
     padding: 15px;
     display: none;
 }
+
 .tab-content.active {
     display: block;
 }
+
 .small-button {
     padding: 5px 10px;
     font-size: 0.9em;
 }
+
 .key-value-row {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
     align-items: center;
+}
+
+/* --- Sidebar Styles --- */
+.sidebar {
+    flex-shrink: 0;
+    width: 40px;
+    background-color: var(--vscode-sideBar-background);
+    border-left: 1px solid var(--vscode-editorGroup-border);
+    display: flex;
+    transition: width 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.sidebar.expanded {
+    width: 400px;
+}
+
+.sidebar-toolbar {
+    width: 40px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    gap: 5px;
+    border-right: 1px solid var(--vscode-editorGroup-border);
+}
+
+.sidebar-tool-button {
+    background: transparent;
+    border: none;
+    color: var(--vscode-icon-foreground);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 3px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-tool-button:hover {
+    background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.sidebar-tool-button.active {
+    background-color: var(--vscode-toolbar-activeBackground, var(--vscode-list-activeSelectionBackground));
+    color: var(--vscode-list-activeSelectionForeground);
+}
+
+.sidebar-content {
+    flex-grow: 1;
+    display: none;
+    /* Hidden by default */
+    flex-direction: column;
+}
+
+.sidebar.expanded .sidebar-content {
+    display: flex;
+    /* Shown when sidebar is expanded */
+}
+
+.sidebar-panel {
+    display: none;
+    /* All panels hidden by default */
+    flex-direction: column;
+    height: 100%;
+}
+
+.sidebar-panel.active {
+    display: flex;
+    /* Active panel is shown */
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    height: 40px;
+    border-bottom: 1px solid var(--vscode-editorGroup-border);
+    flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1em;
+}
+
+.sidebar-close-button {
+    background: transparent;
+    border: none;
+    color: var(--vscode-icon-foreground);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+}
+
+.sidebar-close-button:hover {
+    background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.sidebar-body {
+    padding: 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.sidebar-body pre {
+    background-color: var(--vscode-textBlockQuote-background);
+    border: 1px solid var(--vscode-textBlockQuote-border);
+    padding: 10px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    /* Since CSS 2.1 */
+    white-space: -moz-pre-wrap;
+    /* Mozilla, since 1999 */
+    white-space: -pre-wrap;
+    /* Opera 4-6 */
+    white-space: -o-pre-wrap;
+    /* Opera 7 */
+    word-wrap: break-word;
+    /* Internet Explorer 5.5+ */
+}
+
+.sidebar-body code {
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    color: var(--vscode-editor-foreground);
+}
+
+#copy-curl-button {
+    margin-top: 10px;
 }

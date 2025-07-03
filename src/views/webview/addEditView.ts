@@ -22,7 +22,14 @@ const intervalUnitSelect = document.getElementById('intervalUnit') as HTMLSelect
 const authTypeSelect = document.getElementById('authType') as HTMLSelectElement;
 const logLevelSelect = document.getElementById('log-level') as HTMLSelectElement;
 
+// --- Sidebar Elements ---
+const sidebar = document.querySelector('.sidebar') as HTMLElement;
+const sidebarToolbar = document.querySelector('.sidebar-toolbar') as HTMLElement;
+const curlOutput = document.getElementById('curl-output') as HTMLElement;
+const copyCurlButton = document.getElementById('copy-curl-button') as HTMLButtonElement;
+
 let isProgrammaticUpdate = false;
+let activeSidebarPanel: string | null = null;
 
 const methodColorMap: Record<string, string> = {
     'GET': '#6bdd9a', 'POST': '#ffe47e', 'PUT': '#74aef6', 'DELETE': '#f79a8e',
@@ -51,6 +58,7 @@ function updateUrlFromParams() {
         urlInput.value = queryString ? `${baseUrl}?${queryString}` : baseUrl;
     } finally {
         isProgrammaticUpdate = false;
+        updateCurlOnChange();
     }
 }
 
@@ -77,6 +85,7 @@ function updateParamsFromUrl() {
         urlInput.value = url.origin + url.pathname;
     } finally {
         isProgrammaticUpdate = false;
+        updateCurlOnChange();
     }
 }
 
@@ -167,8 +176,6 @@ function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
     const body = itemToRender.body || { type: 'none' };
 
     nameInput.value = itemToRender.name || '';
-    // Esta é a primeira alteração: carregar o dado existente.
-    // Se o item não tiver um logLevel (itens antigos), o padrão será 'all'.
     logLevelSelect.value = itemToRender.logLevel || 'all';
     urlInput.value = itemToRender.url || '';
     methodSelect.value = itemToRender.method || 'GET';
@@ -232,37 +239,41 @@ function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
     }
     switchAuthView(auth.type);
     updateMethodSelectColor();
+    updateCurlOnChange();
 }
 
-function gatherFormData() {
+function gatherFormData(forCurl = false) {
     const name = nameInput.value;
     const url = urlInput.value;
     const trimmedUrl = url.trim();
 
-    if (!name.trim()) {
-        vscode.postMessage({ command: 'showError', message: 'Item Name is required.' });
-        nameInput.focus();
-        return null;
-    }
-    if (!trimmedUrl) {
-        vscode.postMessage({ command: 'showError', message: 'URL is required.' });
-        urlInput.focus();
-        return null;
-    }
-    try {
-        new URL(trimmedUrl);
-    } catch (e) {
-        vscode.postMessage({ command: 'showError', message: 'Invalid URL. Please include the protocol (e.g. http:// or https://).' });
-        urlInput.focus();
-        return null;
+    if (!forCurl) {
+        if (!name.trim()) {
+            vscode.postMessage({ command: 'showError', message: 'Item Name is required.' });
+            nameInput.focus();
+            return null;
+        }
+        if (!trimmedUrl) {
+            vscode.postMessage({ command: 'showError', message: 'URL is required.' });
+            urlInput.focus();
+            return null;
+        }
+        try {
+            new URL(trimmedUrl);
+        } catch (e) {
+            vscode.postMessage({ command: 'showError', message: 'Invalid URL. Please include the protocol (e.g. http:// or https://).' });
+            urlInput.focus();
+            return null;
+        }
+
+        const numInterval = parseInt(intervalValueInput.value);
+        if (isNaN(numInterval) || numInterval < 1) {
+            vscode.postMessage({ command: 'showError', message: 'Check Interval must be a positive number (at least 1).' });
+            intervalValueInput.focus();
+            return null;
+        }
     }
 
-    const numInterval = parseInt(intervalValueInput.value);
-    if (isNaN(numInterval) || numInterval < 1) {
-        vscode.postMessage({ command: 'showError', message: 'Check Interval must be a positive number (at least 1).' });
-        intervalValueInput.focus();
-        return null;
-    }
 
     const headers: Record<string, string> = {};
     headersContainer.querySelectorAll('.key-value-row').forEach(row => {
@@ -312,20 +323,152 @@ function gatherFormData() {
         };
     }
 
-    return {
+    const baseData = {
         name: name.trim(),
         url: trimmedUrl,
         method: methodSelect.value,
-        intervalValue: numInterval.toString(),
-        intervalUnit: intervalUnitSelect.value,
         expectedStatusCode: parseInt(statusCodeInput.value) || 200,
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         queryParams: queryParams,
         auth: authData,
         body: bodyData,
-        // Esta é a segunda alteração: incluir o novo valor ao salvar.
         logLevel: logLevelSelect.value
     };
+
+    if (forCurl) {
+        return baseData;
+    }
+
+    return {
+        ...baseData,
+        intervalValue: parseInt(intervalValueInput.value).toString(),
+        intervalUnit: intervalUnitSelect.value,
+    };
+}
+
+// --- Sidebar Logic ---
+
+function closeSidebar() {
+    sidebar.classList.remove('expanded');
+    activeSidebarPanel = null;
+    document.querySelectorAll('.sidebar-tool-button.active').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.sidebar-panel.active').forEach(panel => {
+        panel.classList.remove('active');
+        (panel as HTMLElement).style.display = 'none';
+    });
+}
+
+function openSidebarPanel(panelName: string) {
+    // If clicking the same button, close it
+    if (sidebar.classList.contains('expanded') && activeSidebarPanel === panelName) {
+        closeSidebar();
+        return;
+    }
+
+    // Deactivate current active elements
+    document.querySelectorAll('.sidebar-tool-button.active').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.sidebar-panel.active').forEach(panel => {
+        panel.classList.remove('active');
+        (panel as HTMLElement).style.display = 'none';
+    });
+
+    // Activate new elements
+    const toolButton = document.querySelector(`.sidebar-tool-button[data-panel="${panelName}"]`);
+    const panel = document.getElementById(`sidebar-panel-${panelName}`);
+
+    if (toolButton && panel) {
+        toolButton.classList.add('active');
+        panel.classList.add('active');
+        panel.style.display = 'flex';
+        activeSidebarPanel = panelName;
+        sidebar.classList.add('expanded');
+
+        // Generate content for the panel
+        if (panelName === 'curl') {
+            generateCurlCommand();
+        }
+    }
+}
+
+function generateCurlCommand() {
+    const data = gatherFormData(true);
+    if (!data || !data.url) {
+        curlOutput.textContent = 'Enter a valid URL to generate the cURL command.';
+        return;
+    }
+
+    let curlCommand = `curl --location --request ${data.method} `;
+    let url = data.url;
+
+    // Add query parameters from the dedicated tab
+    if (data.queryParams && data.queryParams.length > 0) {
+        const query = data.queryParams
+            .filter(p => p.key)
+            .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+            .join('&');
+        if (query) {
+            url += `${url.includes('?') ? '&' : '?'}${query}`;
+        }
+    }
+
+    // Handle API Key in query params
+    if (data.auth.type === 'apikey' && data.auth.addTo === 'query' && data.auth.key) {
+        const query = `${encodeURIComponent(data.auth.key)}=${encodeURIComponent(data.auth.value)}`;
+        url += `${url.includes('?') ? '&' : '?'}${query}`;
+    }
+
+    curlCommand += `'${url}'`;
+
+    // Add headers
+    const headers = { ...(data.headers || {}) };
+
+    // Handle Auth headers
+    if (data.auth) {
+        switch (data.auth.type) {
+            case 'basic':
+                if (data.auth.username) {
+                    const credentials = btoa(`${data.auth.username}:${data.auth.password || ''}`);
+                    headers['Authorization'] = `Basic ${credentials}`;
+                }
+                break;
+            case 'bearer':
+                if (data.auth.token) {
+                    headers['Authorization'] = `Bearer ${data.auth.token}`;
+                }
+                break;
+            case 'oauth2':
+                if (data.auth.token) {
+                    headers['Authorization'] = `${data.auth.headerPrefix} ${data.auth.token}`;
+                }
+                break;
+            case 'apikey':
+                if (data.auth.key && data.auth.addTo === 'header') {
+                    headers[data.auth.key] = data.auth.value;
+                }
+                break;
+        }
+    }
+
+    for (const key in headers) {
+        if (Object.prototype.hasOwnProperty.call(headers, key)) {
+            const headerValue = String(headers[key]).replace(/'/g, "'\\''");
+            curlCommand += ` \\\n--header '${key}: ${headerValue}'`;
+        }
+    }
+
+    // Add body
+    if (data.body && data.body.type === 'raw' && data.body.content) {
+        const bodyContent = data.body.content.replace(/'/g, "'\\''");
+        curlCommand += ` \\\n--data-raw '${bodyContent}'`;
+    }
+
+    curlOutput.textContent = curlCommand;
+}
+
+function updateCurlOnChange() {
+    if (activeSidebarPanel === 'curl') {
+        generateCurlCommand();
+    }
 }
 
 // --- Event Listeners ---
@@ -337,7 +480,12 @@ window.addEventListener('message', event => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    methodSelect.addEventListener('change', updateMethodSelectColor);
+    // Form interaction listeners
+    document.querySelector('.form-container')?.addEventListener('input', updateCurlOnChange);
+    methodSelect.addEventListener('change', () => {
+        updateMethodSelectColor();
+        updateCurlOnChange();
+    });
     urlInput.addEventListener('blur', updateParamsFromUrl);
     queryParamsContainer.addEventListener('input', updateUrlFromParams);
     queryParamsContainer.addEventListener('click', (event) => {
@@ -367,11 +515,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = event.target as HTMLElement;
         if (target && target.classList.contains('remove-button')) {
             target.closest('.key-value-row')?.remove();
+            updateCurlOnChange();
         }
     });
 
-    bodyTypeSelect.addEventListener('change', (e) => switchBodyView((e.target as HTMLSelectElement).value));
-    authTypeSelect.addEventListener('change', (e) => switchAuthView((e.target as HTMLSelectElement).value));
+    bodyTypeSelect.addEventListener('change', (e) => {
+        switchBodyView((e.target as HTMLSelectElement).value);
+        updateCurlOnChange();
+    });
+    authTypeSelect.addEventListener('change', (e) => {
+        switchAuthView((e.target as HTMLSelectElement).value);
+        updateCurlOnChange();
+    });
 
     (document.getElementById('beautify-btn') as HTMLButtonElement).addEventListener('click', () => {
         const language = (document.getElementById('rawBodyLanguage') as HTMLSelectElement).value;
@@ -380,6 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (language === 'json') {
                 rawBodyTextarea.value = JSON.stringify(JSON.parse(currentBody), null, 2);
+                updateCurlOnChange();
             } else {
                 vscode.postMessage({ command: 'showError', message: `Beautify for ${language.toUpperCase()} is not yet implemented.` });
             }
@@ -396,6 +552,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = gatherFormData();
         if (data) {
             vscode.postMessage({ command: 'save', data: data });
+        }
+    });
+
+    // Sidebar listeners
+    sidebarToolbar.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement).closest('.sidebar-tool-button');
+        if (target) {
+            const panelName = target.getAttribute('data-panel');
+            if (panelName) {
+                openSidebarPanel(panelName);
+            }
+        }
+    });
+
+    document.querySelector('.sidebar-content')?.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement).closest('.sidebar-close-button');
+        if (target) {
+            closeSidebar();
+        }
+    });
+
+    copyCurlButton.addEventListener('click', () => {
+        if (curlOutput.textContent) {
+            navigator.clipboard.writeText(curlOutput.textContent);
+            vscode.postMessage({ command: 'showInfo', message: 'cURL command copied to clipboard.' });
         }
     });
 
