@@ -1,8 +1,27 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
+// Determine the mode from NODE_ENV, which webpack-cli sets.
+const isProduction = process.env.NODE_ENV === 'production';
+
+/** @type {import('webpack').Configuration} */
+const baseConfig = {
+    mode: isProduction ? 'production' : 'development',
+    devtool: isProduction ? 'hidden-source-map' : 'source-map',
+    resolve: {
+        extensions: ['.ts', '.js'],
+        alias: {
+            '@': path.resolve(__dirname, 'src')
+        }
+    },
+    performance: {
+        hints: false // Disable performance hints for VS Code extension bundles
+    }
+};
+
+/** @type {import('webpack').Configuration} */
 const extensionConfig = {
-    mode: 'development',
+    ...baseConfig,
     target: 'node',
     entry: './src/extension.ts',
     output: {
@@ -14,12 +33,6 @@ const extensionConfig = {
     externals: {
         vscode: 'commonjs vscode'
     },
-    resolve: {
-        extensions: ['.ts', '.js'],
-        alias: {
-            '@': path.resolve(__dirname, 'src')
-        }
-    },
     module: {
         rules: [
             {
@@ -28,40 +41,35 @@ const extensionConfig = {
                 exclude: /node_modules/
             }
         ]
-    },
-    devtool: 'source-map'
+    }
 };
 
+/** @type {import('webpack').Configuration} */
 const webviewConfig = {
-    mode: 'development',
+    ...baseConfig,
     target: 'web',
     entry: './src/views/webview/addEditView.ts',
     output: {
         filename: 'webview/addEditView.js',
         path: path.resolve(__dirname, 'dist')
     },
+    externals: {}, // Reset externals from base config for web target
     plugins: [
         new CopyPlugin({
             patterns: [
                 {
                     from: path.resolve(__dirname, 'src', 'views', 'webview'),
                     to: path.resolve(__dirname, 'dist', 'webview'),
-                    // Exclude TypeScript files as they are handled by ts-loader
                     globOptions: { ignore: ['**/*.ts'] }
                 }
             ]
         })
     ],
-    resolve: {
-        extensions: ['.ts', '.js'],
-        alias: {
-            '@': path.resolve(__dirname, 'src')
-        }
-    },
     module: {
         rules: [
             {
                 test: /\.ts$/,
+                exclude: /node_modules/,
                 use: [
                     {
                         loader: 'ts-loader',
@@ -69,12 +77,10 @@ const webviewConfig = {
                             configFile: 'tsconfig.webview.json'
                         }
                     }
-                ],
-                exclude: /node_modules/
+                ]
             }
         ]
-    },
-    devtool: 'source-map'
+    }
 };
 
 module.exports = [extensionConfig, webviewConfig];
