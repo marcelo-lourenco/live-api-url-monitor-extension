@@ -49,6 +49,11 @@
                 "icon": "$(new-folder)"
             },
             {
+                "command": "urlMonitor.saveLog",
+                "title": "Save Log File",
+                "icon": "$(save)"
+            },
+            {
                 "command": "urlMonitor.showLog",
                 "title": "Show Log",
                 "icon": "$(list-flat)"
@@ -57,6 +62,11 @@
                 "command": "urlMonitor.clearAllLogs",
                 "title": "Clear All Logs",
                 "icon": "$(clear-all)"
+            },
+            {
+                "command": "urlMonitor.deleteAll",
+                "title": "Delete All (folders and items)",
+                "icon": "$(trash)"
             },
             {
                 "command": "urlMonitor.refreshItem",
@@ -225,9 +235,13 @@
                     "group": "1_log@1"
                 },
                 {
+                    "command": "urlMonitor.saveLog",
+                    "group": "1_log@2"
+                },
+                {
                     "command": "urlMonitor.clearAllLogs",
                     "icon": "$(clear-all)",
-                    "group": "1_log@2"
+                    "group": "1_log@3"
                 },
                 {
                     "command": "urlMonitor.exportItems",
@@ -238,6 +252,11 @@
                     "command": "urlMonitor.importItems",
                     "when": "view == urlMonitor.list",
                     "group": "2_data@2"
+                },
+                {
+                    "command": "urlMonitor.deleteAll",
+                    "when": "view == urlMonitor.list",
+                    "group": "9_destructive@1"
                 }
             ],
             "view/item/context": [

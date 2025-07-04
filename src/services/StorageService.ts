@@ -103,6 +103,11 @@ export class StorageService {
         await this.globalState.update(this.storageKey, filteredItems);
     }
 
+    async clearAllItems(): Promise<void> {
+        // Simplesmente atualiza a chave de armazenamento com um array vazio para deletar tudo.
+        await this.globalState.update(this.storageKey, []);
+    }
+
     async updateItemStatus(id: string, status: 'up' | 'down'): Promise<void> {
         const items = await this.getItems();
         const item = items.find(i => i.id === id) as UrlItem | undefined;

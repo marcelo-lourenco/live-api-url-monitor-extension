@@ -72,7 +72,10 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.duplicateFolder', (folder: FolderItem) => this.duplicate(folder)),
             vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
             vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item, false)),
-            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item))
+            vscode.commands.registerCommand('urlMonitor.deleteFolder', (item: FolderItem) => this.deleteFolder(item)),
+
+            // Destructive commands
+            vscode.commands.registerCommand('urlMonitor.deleteAll', () => this.deleteAllItems())
         );
     }
 
@@ -135,6 +138,26 @@ export class ListView {
                 vscode.window.showInformationMessage(`"${item.name}" deleted successfully.`);
             } catch (error) {
                 vscode.window.showErrorMessage(`Failed to delete item: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+    }
+
+    private async deleteAllItems(): Promise<void> {
+        const confirmation = await vscode.window.showWarningMessage(
+            'ATTENTION! Do you want to delete all folders and items from Monitor?',
+            { modal: true },
+            'Yes. Delete All.'
+        );
+
+        if (confirmation === 'Yes. Delete All.') {
+            try {
+                await this.storageService.clearAllItems();
+                this.refresh();
+                await this.monitorService.startMonitoring(); // Reinicia o monitoramento com a lista vazia
+                vscode.window.showInformationMessage('All items have been deleted successfully.');
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`An error occurred while deleting items: ${message}`);
             }
         }
     }

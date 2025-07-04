@@ -26,7 +26,7 @@
             <div class="form-row">
                 <div class="form-group col-6">
                     <label for="name">Item Name *</label>
-                    <input type="text" id="name" required>
+                    <input type="text" id="name" maxlength="60" required>
                 </div>
                 <div class="form-group col-2">
                     <label for="statusCode" style="min-width: 150px;">Expected Status Code</label>
@@ -246,7 +246,7 @@
                 </div>
                 <div class="sidebar-panel" id="sidebar-panel-logs" style="display: none;">
                     <div class="sidebar-header">
-                        <h3>Recent Logs</h3>
+                        <h3>Logs</h3>
                         <div class="sidebar-header-actions">
                             <button id="log-sort-button" class="action-button" title="Sort: Newest First">
                                 <i class="codicon codicon-arrow-down"></i>

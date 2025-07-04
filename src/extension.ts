@@ -7,6 +7,7 @@ import { LogViewProvider } from './views/LogViewProvider';
 import { ExportItemsCommand } from './commands/exportItems';
 import { ImportItemsCommand } from './commands/importItems';
 import { AddEditView } from './views/AddEditView';
+import { SaveLogCommand } from './commands/saveLog';
 import { ImportCurlCommand } from './commands/importCurl';
 
 let monitorService: MonitorService;
@@ -23,6 +24,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     const exportItemsCommand = new ExportItemsCommand(storageService);
     const importItemsCommand = new ImportItemsCommand(storageService, monitorService);
     const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
+    const saveLogCommand = new SaveLogCommand(logService);
     const listView = new ListView(context, storageService, addEditView, monitorService, logViewProvider);
 
     // Register webview panel serializer
@@ -56,6 +58,10 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
                 listView.refresh();
             }
         })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('urlMonitor.saveLog', () => saveLogCommand.execute())
     );
 
     context.subscriptions.push(
