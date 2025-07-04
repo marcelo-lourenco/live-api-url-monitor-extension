@@ -25,7 +25,7 @@ const extensionConfig = {
     target: 'node',
     entry: './src/extension.ts',
     output: {
-        filename: 'extension.js',
+        filename: 'extension.cjs',
         path: path.resolve(__dirname, 'dist'),
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]'

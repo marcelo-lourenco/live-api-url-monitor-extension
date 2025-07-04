@@ -4,6 +4,7 @@
     "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
     "version": "1.0.3",
     "publisher": "mlourenco",
+    "type": "module",
     "icon": "resources/meerkat-logo.png",
     "engines": {
         "vscode": "^1.75.0"
@@ -35,7 +36,7 @@
         "uptime",
         "url"
     ],
-    "main": "./dist/extension.js",
+    "main": "./dist/extension.cjs",
     "contributes": {
         "commands": [
             {
@@ -350,8 +351,6 @@
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "9_destructive@1"
                 },
-
-
                 {
                     "command": "urlMonitor.refreshItem",
                     "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
@@ -415,6 +414,7 @@
         "copy-webpack-plugin": "^13.0.0",
         "eslint": "^9.30.1",
         "eslint-config-prettier": "^10.1.5",
+        "globals": "^16.3.0",
         "prettier": "^3.6.2",
         "ts-loader": "^9.3.1",
         "typescript": "^5.8.3",
