@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StorageService } from '../services/StorageService';
 import { MonitorService } from '../services/MonitorService';
-import { UrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
+import type { UrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
 
 // A type guard to check if a method is a valid UrlItem method
 function isValidMethod(method: string): method is UrlItem['method'] {

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { StorageService } from '../services/StorageService';
+import type { StorageService } from '../services/StorageService';
 
 export class ExportItemsCommand {
     constructor(private storageService: StorageService) { }

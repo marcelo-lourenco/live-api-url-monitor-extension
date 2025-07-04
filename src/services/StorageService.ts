@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
-import { UrlItem, FolderItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
+import { isUrlItem, type UrlItem, type FolderItem, type TreeViewItem } from '../models/UrlItem';
 
 export class StorageService {
     private readonly storageKey = 'urlMonitorItems';

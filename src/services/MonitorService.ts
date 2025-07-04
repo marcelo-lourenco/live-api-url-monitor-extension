@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import axios, { AxiosRequestConfig, AxiosError } from 'axios';
-import { UrlItem } from '../models/UrlItem';
+import axios, { type AxiosRequestConfig, type AxiosError } from 'axios';
+import type { UrlItem } from '../models/UrlItem';
 import { StorageService } from './StorageService';
 import { LogService } from './LogService';
 

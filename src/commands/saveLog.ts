@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { LogService } from '../services/LogService';
-import { LogEntry } from '../models/LogEntry';
+import type { LogEntry } from '../models/LogEntry';
 
 export class SaveLogCommand {
     constructor(private logService: LogService) { }

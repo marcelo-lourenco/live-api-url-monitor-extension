@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { UrlItem, createDefaultUrlItem } from '../models/UrlItem';
+import { createDefaultUrlItem, type UrlItem } from '../models/UrlItem';
 import { LogService } from '../services/LogService';
 
 export class AddEditView {

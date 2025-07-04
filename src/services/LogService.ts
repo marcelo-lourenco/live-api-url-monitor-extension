@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LogEntry } from '../models/LogEntry';
+import type { LogEntry } from '../models/LogEntry';
 
 export class LogService {
     private logFileUri: vscode.Uri;

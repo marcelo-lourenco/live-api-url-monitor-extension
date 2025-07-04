@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StorageService } from '../services/StorageService';
 import { AddEditView } from './AddEditView';
-import { UrlItem, FolderItem, TreeViewItem, isUrlItem } from '../models/UrlItem';
+import { isUrlItem, type UrlItem, type FolderItem, type TreeViewItem } from '../models/UrlItem';
 import { UrlTreeDataProvider } from './UrlTreeDataProvider';
 import { LogViewProvider } from './LogViewProvider';
 import { MonitorService } from '../services/MonitorService';

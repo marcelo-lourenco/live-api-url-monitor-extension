@@ -1,4 +1,4 @@
-import { UrlItem } from '../../models/UrlItem';
+import type { UrlItem } from '../../models/UrlItem';
 
 const vscode = acquireVsCodeApi();
 
