@@ -2,6 +2,20 @@
 
 All notable changes to the **Live API & URL Monitor** extension will be documented in this file.
 
+## [1.0.3] - 2025-07-XX
+
+**Added**:
+
+- Save log file
+
+## [1.0.2] - 2025-07-01
+
+**Added**:
+
+- Sidebar
+- cURL Command in sidebar
+- Logs in sidebar
+
 ## [1.0.1] - 2025-06-30
 
 **Added**:

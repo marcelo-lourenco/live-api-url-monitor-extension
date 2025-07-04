@@ -2,7 +2,7 @@
     "name": "live-api-url-monitor",
     "displayName": "Live URL & API Monitor",
     "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "publisher": "mlourenco",
     "icon": "resources/meerkat-logo.png",
     "engines": {
@@ -13,17 +13,27 @@
         "Other"
     ],
     "keywords": [
-        "url",
         "api",
-        "monitor",
-        "live",
-        "status",
-        "health",
+        "automation",
         "check",
-        "http",
-        "https",
+        "curl",
+        "developer tool",
         "endpoint",
-        "developer tool"
+        "health",
+        "healthcheck",
+        "http",
+        "http client",
+        "https",
+        "insomnia",
+        "live",
+        "monitor",
+        "ping",
+        "postman",
+        "rest",
+        "status",
+        "testing",
+        "uptime",
+        "url"
     ],
     "main": "./dist/extension.js",
     "contributes": {
@@ -389,9 +399,10 @@
         "vscode:prepublish": "npm run package",
         "compile": "webpack",
         "watch": "webpack --watch",
-        "package": "webpack --mode production",
+        "package": "webpack --mode production --stats-error-details",
         "lint": "eslint src --ext ts",
-        "test": "node ./dist/test/runTest.js"
+        "test": "node ./dist/test/runTest.js",
+        "outdated": "npm outdated --long"
     },
     "devDependencies": {
         "@types/glob": "^7.2.0",
@@ -416,7 +427,8 @@
         "uuid": "^8.3.2"
     },
     "repository": {
-        "url": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension"
+        "type": "git",
+        "url": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension.git"
     },
     "homepage": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension",
     "bugs": {
