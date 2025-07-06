@@ -1,4 +1,5 @@
-import type { UrlItem } from '../../models/UrlItem';
+import type { AuthConfig, UrlItem } from '../../models/UrlItem';
+import type { LogEntry } from '../../models/LogEntry';
 
 const vscode = acquireVsCodeApi();
 
@@ -39,7 +40,7 @@ let isProgrammaticUpdate = false;
 let activeSidebarPanel: string | null = null;
 let lastSidebarWidth = 400; // Default expanded width, will be updated on resize
 let currentItemId: string | null = null;
-let currentLogs: any[] = [];
+let currentLogs: LogEntry[] = [];
 let logSortOrder: 'asc' | 'desc' = 'desc';
 let showOnlyErrors = false;
 
@@ -86,7 +87,7 @@ function updateParamsFromUrl() {
         let url;
         try {
             url = new URL(fullUrl);
-        } catch (e) {
+        } catch {
             return; // URL is not valid yet
         }
 
@@ -279,7 +280,7 @@ function gatherFormData(forCurl = false) {
         }
         try {
             new URL(trimmedUrl);
-        } catch (e) {
+        } catch {
             vscode.postMessage({ command: 'showError', message: 'Invalid URL. Please include the protocol (e.g. http:// or https://).' });
             urlInput.focus();
             return null;
@@ -315,7 +316,7 @@ function gatherFormData(forCurl = false) {
     }
 
     const authType = authTypeSelect.value;
-    let authData: any = { type: 'noauth' };
+    let authData: AuthConfig = { type: 'noauth' };
     if (authType === 'basic') {
         authData = {
             type: 'basic',
@@ -327,7 +328,7 @@ function gatherFormData(forCurl = false) {
             type: 'apikey',
             key: (document.getElementById('apiKeyKey') as HTMLInputElement).value.trim(),
             value: (document.getElementById('apiKeyValue') as HTMLInputElement).value.trim(),
-            addTo: (document.getElementById('apiKeyAddTo') as HTMLSelectElement).value
+            addTo: (document.getElementById('apiKeyAddTo') as HTMLSelectElement).value as 'header' | 'query'
         };
     } else if (authType === 'bearer') {
         authData = {
@@ -659,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 vscode.postMessage({ command: 'showError', message: `Beautify for ${language.toUpperCase()} is not yet implemented.` });
             }
-        } catch (e) {
+        } catch {
             vscode.postMessage({ command: 'showError', message: 'Invalid JSON format. Cannot beautify.' });
         }
     });

@@ -25,7 +25,7 @@ export class LogService {
             let existingContent = new Uint8Array(0);
             try {
                 existingContent = await vscode.workspace.fs.readFile(this.logFileUri);
-            } catch (error) {
+            } catch {
                 // File doesn't exist, which is fine. It will be created.
             }
             const newContent = new Uint8Array(existingContent.length + content.length);
