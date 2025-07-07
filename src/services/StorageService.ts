@@ -7,8 +7,16 @@ export class StorageService {
 
     constructor(private globalState: vscode.Memento) { }
 
+    // This private helper is the core of the refactoring.
+    // It centralizes fetching and mapping, avoiding redundant work.
+    private async _getItemsAndMap(): Promise<{ items: TreeViewItem[], itemMap: Map<string, TreeViewItem> }> {
+        const items = await this.getItems();
+        const itemMap = new Map<string, TreeViewItem>(items.map(item => [item.id, item]));
+        return { items, itemMap };
+    }
+
     async getItems(): Promise<TreeViewItem[]> {
-        // Migration for old data structure
+        // Migration for old data structures
         const items = this.globalState.get<any[]>(this.storageKey, []) || [];
         let needsUpdate = false;
 
@@ -20,30 +28,29 @@ export class StorageService {
             const currentItem: any = { ...item };
             let itemChanged = false;
 
-            // Migration 1: Old format items without a 'type'
+            // Migração 1: Itens de formato antigo sem 'type'
             if (currentItem.type === undefined) {
-                currentItem.type = 'url';
+                currentItem.type = 'url'; // Migration 1: Old format items without 'type'
                 itemChanged = true;
             }
 
-            // Migration 2: Items missing a 'parentId' (ensures it's null, not undefined)
+            // Migração 2: Itens sem 'parentId' (garante que seja null, não undefined)
             if (currentItem.parentId === undefined) {
-                currentItem.parentId = null;
+                currentItem.parentId = null; // Migration 2: Items without 'parentId' (ensures it's null, not undefined)
                 itemChanged = true;
             }
 
-            // Migration 3: Items missing a 'sortOrder'
+            // Migração 3: Itens sem 'sortOrder'
             if (currentItem.sortOrder === undefined) {
-                currentItem.sortOrder = index; // Use array index for initial order
+                currentItem.sortOrder = index; // Migration 3: Items without 'sortOrder', use array index for initial order
                 itemChanged = true;
             }
 
-            // Migration 4: UrlItems missing 'isPaused'
+            // Migração 4: UrlItems sem 'isPaused'
             if (isUrlItem(currentItem) && currentItem.isPaused === undefined) {
-                currentItem.isPaused = false;
+                currentItem.isPaused = false; // Migration 4: UrlItems without 'isPaused'
                 itemChanged = true;
             }
-
 
             if (itemChanged) {
                 needsUpdate = true;
@@ -78,45 +85,58 @@ export class StorageService {
     }
 
     async updateItem(itemToUpdate: TreeViewItem): Promise<void> {
-        const items = await this.getItems();
-        const index = items.findIndex(i => i.id === itemToUpdate.id);
-        if (index !== -1) {
-            // Preserve properties that are not part of the update, like status
-            items[index] = { ...items[index], ...itemToUpdate };
+        const { items, itemMap } = await this._getItemsAndMap();
+        const existingItem = itemMap.get(itemToUpdate.id);
+
+        if (existingItem) {
+            // Merge the changes into the existing item object.
+            // This works because `existingItem` is a reference to an object in the `items` array.
+            Object.assign(existingItem, itemToUpdate);
             await this.globalState.update(this.storageKey, items);
         }
     }
 
     async deleteItem(id: string): Promise<void> {
-        const items = await this.getItems();
-        const idsToDelete = new Set<string>();
-        idsToDelete.add(id);
+        const { items, itemMap } = await this._getItemsAndMap();
+        if (!itemMap.has(id)) {
+            return; // The item to be deleted does not exist.
+        }
 
-        // Find all children recursively to delete them as well
-        const findChildren = (parentId: string) => {
-            const children = items.filter(item => item.parentId === parentId);
+        // For efficient recursive deletion, group items by their parent
+        const itemsByParent = new Map<string | null, TreeViewItem[]>();
+        for (const item of items) {
+            if (!itemsByParent.has(item.parentId)) {
+                itemsByParent.set(item.parentId, []);
+            }
+            itemsByParent.get(item.parentId)!.push(item);
+        }
+
+        const idsToDelete = new Set<string>();
+        const collectChildrenRecursively = (parentId: string) => {
+            const children = itemsByParent.get(parentId) || [];
             for (const child of children) {
                 idsToDelete.add(child.id);
                 if (child.type === 'folder') {
-                    findChildren(child.id);
+                    collectChildrenRecursively(child.id);
                 }
             }
         };
 
-        findChildren(id);
+        idsToDelete.add(id);
+        collectChildrenRecursively(id);
 
         const filteredItems = items.filter(item => !idsToDelete.has(item.id));
         await this.globalState.update(this.storageKey, filteredItems);
     }
 
     async clearAllItems(): Promise<void> {
-        // Simplesmente atualiza a chave de armazenamento com um array vazio para deletar tudo.
         await this.globalState.update(this.storageKey, []);
     }
 
     async updateItemStatus(id: string, status: 'up' | 'down'): Promise<void> {
-        const items = await this.getItems();
-        const item = items.find(i => i.id === id) as UrlItem | undefined;
+        const { items, itemMap } = await this._getItemsAndMap();
+        const item = itemMap.get(id);
+
         if (item && isUrlItem(item)) {
             item.lastStatus = status;
             item.lastChecked = new Date().toISOString();
@@ -125,8 +145,9 @@ export class StorageService {
     }
 
     async updateItemPausedState(id: string, isPaused: boolean): Promise<void> {
-        const items = await this.getItems();
-        const item = items.find(i => i.id === id);
+        const { items, itemMap } = await this._getItemsAndMap();
+        const item = itemMap.get(id);
+
         if (item && isUrlItem(item)) {
             item.isPaused = isPaused;
             await this.globalState.update(this.storageKey, items);
@@ -134,15 +155,18 @@ export class StorageService {
     }
 
     async updateMultipleItemsPausedState(ids: string[], isPaused: boolean): Promise<void> {
-        const items = await this.getItems();
+        const { items, itemMap } = await this._getItemsAndMap();
         const idSet = new Set(ids);
         let changed = false;
-        for (const item of items) {
-            if (idSet.has(item.id) && isUrlItem(item)) {
+
+        for (const id of idSet) {
+            const item = itemMap.get(id);
+            if (item && isUrlItem(item)) {
                 item.isPaused = isPaused;
                 changed = true;
             }
         }
+
         if (changed) {
             await this.globalState.update(this.storageKey, items);
         }
@@ -155,19 +179,19 @@ export class StorageService {
     }
 
     async moveItem(itemId: string, newParentId: string | null): Promise<void> {
-        const items = await this.getItems();
-        const itemToMove = items.find(i => i.id === itemId);
+        const { items, itemMap } = await this._getItemsAndMap();
+        const itemToMove = itemMap.get(itemId);
 
         if (itemToMove) {
-            // Prevent moving a folder into itself or its children
+            // Prevents a folder from being moved into itself or one of its children
             if (itemToMove.type === 'folder') {
                 let currentParentId = newParentId;
                 while (currentParentId !== null) {
                     if (currentParentId === itemToMove.id) {
-                        vscode.window.showErrorMessage('Cannot move a folder into itself or one of its subfolders.');
+                        vscode.window.showErrorMessage('Não é possível mover uma pasta para dentro de si mesma ou de uma de suas subpastas.');
                         return;
                     }
-                    const parent = items.find(i => i.id === currentParentId);
+                    const parent = itemMap.get(currentParentId);
                     currentParentId = parent ? parent.parentId : null;
                 }
             }
@@ -178,20 +202,20 @@ export class StorageService {
     }
 
     async reorderItems(draggedItemId: string, targetItemId: string | null, newParentId: string | null): Promise<void> {
-        const items = await this.getItems();
-        const draggedItem = items.find(i => i.id === draggedItemId);
+        const { items, itemMap } = await this._getItemsAndMap();
+        const draggedItem = itemMap.get(draggedItemId);
         if (!draggedItem) return;
 
-        // Update parent first
+        // Update the parent first
         draggedItem.parentId = newParentId;
 
         // Get all items in the new parent context (siblings)
         let siblings = items.filter(i => i.parentId === newParentId).sort((a, b) => a.sortOrder - b.sortOrder);
 
-        // Remove the dragged item from its old position in the sibling list to re-insert it
+        // Remove the dragged item from its old position in the siblings list to re-insert it
         siblings = siblings.filter(i => i.id !== draggedItemId);
 
-        if (targetItemId === null) { // Dropped at the end of the list (or into an empty folder)
+        if (targetItemId === null) { // Dropped at the end of the list (or in an empty folder)
             siblings.push(draggedItem);
         } else {
             const targetIndex = siblings.findIndex(i => i.id === targetItemId);
@@ -199,11 +223,11 @@ export class StorageService {
                 // Insert the dragged item before the target item
                 siblings.splice(targetIndex, 0, draggedItem);
             } else {
-                siblings.push(draggedItem); // Fallback: add to end
+                siblings.push(draggedItem); // Fallback: adiciona ao final
             }
         }
 
-        // Re-assign sortOrder based on the new array order
+        // Reassign sortOrder based on the new array order
         siblings.forEach((item, index) => item.sortOrder = index);
         await this.globalState.update(this.storageKey, items);
     }
@@ -214,21 +238,21 @@ export class StorageService {
     }
 
     async duplicateItemOrFolder(sourceId: string): Promise<void> {
-        const allItems = await this.getItems();
-        const sourceItem = allItems.find(i => i.id === sourceId);
+        const { items, itemMap } = await this._getItemsAndMap();
+        const sourceItem = itemMap.get(sourceId);
 
         if (!sourceItem) {
-            throw new Error('Source item not found for duplication.');
+            throw new Error('Item de origem não encontrado para duplicação.');
         }
 
         const itemsToAdd: TreeViewItem[] = [];
-        // This map tracks the mapping from old IDs to newly generated IDs.
+        // This map tracks the mapping of old IDs to newly generated IDs.
         // It's crucial for correctly setting the `parentId` of nested items.
-        const idMap = new Map<string, string>();
+        const newIdMap = new Map<string, string>();
 
         const duplicateRecursively = (originalItem: TreeViewItem, newParentId: string | null) => {
             const newId = uuidv4();
-            idMap.set(originalItem.id, newId);
+            newIdMap.set(originalItem.id, newId);
 
             const newItem: TreeViewItem = {
                 ...originalItem,
@@ -245,21 +269,33 @@ export class StorageService {
             itemsToAdd.push(newItem);
 
             if (newItem.type === 'folder') {
-                const children = allItems.filter(child => child.parentId === originalItem.id);
+                const children = items.filter(child => child.parentId === originalItem.id);
                 children.forEach(child => duplicateRecursively(child, newId));
             }
         };
 
         duplicateRecursively(sourceItem, sourceItem.parentId);
 
-        await this.globalState.update(this.storageKey, [...allItems, ...itemsToAdd]);
+        await this.globalState.update(this.storageKey, [...items, ...itemsToAdd]);
     }
 
     async getDescendantUrlItems(folderId: string): Promise<UrlItem[]> {
-        const allItems = await this.getItems();
+        const { items, itemMap } = await this._getItemsAndMap();
+        if (!itemMap.has(folderId)) {
+            return [];
+        }
+
         const descendants: UrlItem[] = [];
+        const itemsByParent = new Map<string | null, TreeViewItem[]>();
+        for (const item of items) {
+            if (!itemsByParent.has(item.parentId)) {
+                itemsByParent.set(item.parentId, []);
+            }
+            itemsByParent.get(item.parentId)!.push(item);
+        }
+
         const findChildrenRecursively = (parentId: string) => {
-            const children = allItems.filter(item => item.parentId === parentId);
+            const children = itemsByParent.get(parentId) || [];
             for (const child of children) {
                 if (isUrlItem(child)) {
                     descendants.push(child);
