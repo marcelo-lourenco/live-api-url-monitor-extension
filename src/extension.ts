@@ -9,6 +9,7 @@ import { ImportItemsCommand } from './commands/importItems';
 import { AddEditView } from './views/AddEditView';
 import { SaveLogCommand } from './commands/saveLog';
 import { ImportCurlCommand } from './commands/importCurl';
+import type { TreeViewItem } from './models/UrlItem';
 
 let monitorService: MonitorService;
 let logService: LogService;
@@ -24,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     const exportItemsCommand = new ExportItemsCommand(storageService);
     const importItemsCommand = new ImportItemsCommand(storageService, monitorService);
     const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
-    const saveLogCommand = new SaveLogCommand(logService);
+    const saveLogCommand = new SaveLogCommand(logService, storageService);
     const listView = new ListView(context, storageService, addEditView, monitorService, logViewProvider);
 
     // Register webview panel serializer
@@ -61,7 +62,17 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('urlMonitor.saveLog', () => saveLogCommand.execute())
+        vscode.commands.registerCommand('urlMonitor.saveAllLogs', () => saveLogCommand.execute())
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('urlMonitor.saveFolderLogs', (item: TreeViewItem) =>
+            saveLogCommand.execute(item)
+        )
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('urlMonitor.saveItemLog', (item: TreeViewItem) => saveLogCommand.execute(item))
     );
 
     context.subscriptions.push(

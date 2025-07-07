@@ -1,9 +1,14 @@
 import * as vscode from 'vscode';
 import { LogService } from '../services/LogService';
 import type { LogEntry } from '../models/LogEntry';
+import { StorageService } from '../services/StorageService';
+import { isUrlItem, type TreeViewItem } from '../models/UrlItem';
 
 export class SaveLogCommand {
-    constructor(private logService: LogService) { }
+    constructor(
+        private logService: LogService,
+        private storageService: StorageService
+    ) { }
 
     private formatLogsAsTable(logs: LogEntry[]): string {
         const headers = {
@@ -91,11 +96,35 @@ export class SaveLogCommand {
         return [headerLine, separatorLine, ...rows].join('\n');
     }
 
-    public async execute(): Promise<void> {
+    public async execute(context?: TreeViewItem): Promise<void> {
         try {
-            const logs = await this.logService.getLogs();
+            let logs: LogEntry[] = [];
+            let logTitle = 'All Monitor Logs';
+            let defaultFileName = 'url_monitor_all.log';
+
+            if (!context) {
+                // Case 1: Save All Logs (from command palette or title menu)
+                logs = await this.logService.getLogs();
+            } else if (isUrlItem(context)) {
+                // Case 2: Save logs for a single item
+                logs = await this.logService.getLogs([context.id]);
+                logTitle = `Logs for Item: ${context.name}`;
+                defaultFileName = `url_monitor_${context.name.replace(/[^a-z0-9]/gi, '_')}.log`;
+            } else {
+                // Case 3: Save logs for a folder and its descendants
+                const descendantItems = await this.storageService.getDescendantUrlItems(context.id);
+                if (descendantItems.length === 0) {
+                    vscode.window.showInformationMessage(`Folder "${context.name}" has no items with logs to save.`);
+                    return;
+                }
+                const descendantIds = descendantItems.map(d => d.id);
+                logs = await this.logService.getLogs(descendantIds);
+                logTitle = `Logs for Folder: ${context.name}`;
+                defaultFileName = `url_monitor_folder_${context.name.replace(/[^a-z0-9]/gi, '_')}.log`;
+            }
+
             if (logs.length === 0) {
-                vscode.window.showInformationMessage('There are no logs to save.');
+                vscode.window.showInformationMessage('There are no logs to save for the selected scope.');
                 return;
             }
 
@@ -103,7 +132,7 @@ export class SaveLogCommand {
             logs.reverse();
 
             const formattedLogs = this.formatLogsAsTable(logs);
-            const logContent = `URL & API Monitor Logs\nGenerated on: ${new Date().toLocaleString()}\nTotal Entries: ${logs.length}\n\n${formattedLogs}`;
+            const logContent = `URL & API Monitor - ${logTitle}\nGenerated on: ${new Date().toLocaleString()}\nTotal Entries: ${logs.length}\n\n${formattedLogs}`;
 
             const uri = await vscode.window.showSaveDialog({
                 title: 'Save Monitor Logs',
@@ -111,7 +140,7 @@ export class SaveLogCommand {
                     'Log Files': ['log'],
                     'Text Files': ['txt']
                 },
-                defaultUri: vscode.Uri.file('url_monitor.log')
+                defaultUri: vscode.Uri.file(defaultFileName)
             });
 
             if (uri) {

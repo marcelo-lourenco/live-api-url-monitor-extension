@@ -2,11 +2,11 @@
 
 All notable changes to the **Live API & URL Monitor** extension will be documented in this file.
 
-## [1.0.3] - 2025-07-XX
+## [1.0.3] - 2025-07-06
 
 **Added**:
 
-- Save log file
+- Save log tofile
 
 ## [1.0.2] - 2025-07-01
 

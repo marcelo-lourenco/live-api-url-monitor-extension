@@ -60,11 +60,6 @@
                 "icon": "$(new-folder)"
             },
             {
-                "command": "urlMonitor.saveLog",
-                "title": "Save Log File",
-                "icon": "$(save)"
-            },
-            {
                 "command": "urlMonitor.showLog",
                 "title": "Show Log",
                 "icon": "$(list-flat)"
@@ -168,6 +163,21 @@
                 "command": "urlMonitor.playFolder",
                 "title": "Resume Folder",
                 "icon": "$(debug-start)"
+            },
+            {
+                "command": "urlMonitor.saveAllLogs",
+                "title": "Save All Logs to File",
+                "icon": "$(save-all)"
+            },
+            {
+                "command": "urlMonitor.saveFolderLogs",
+                "title": "Save Folder Logs to File",
+                "icon": "$(save)"
+            },
+            {
+                "command": "urlMonitor.saveItemLog",
+                "title": "Save Item Log to File",
+                "icon": "$(save)"
             }
         ],
         "viewsContainers": {
@@ -246,7 +256,7 @@
                     "group": "1_log@1"
                 },
                 {
-                    "command": "urlMonitor.saveLog",
+                    "command": "urlMonitor.saveAllLogs",
                     "group": "1_log@2"
                 },
                 {
@@ -345,6 +355,16 @@
                     "command": "urlMonitor.duplicateFolder",
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "4_actions@1"
+                },
+                {
+                    "command": "urlMonitor.saveFolderLogs",
+                    "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
+                    "group": "5_actions@1"
+                },
+                {
+                    "command": "urlMonitor.saveItemLog",
+                    "when": "viewItem == 'urlItem-running' || viewItem == 'urlItem-paused'",
+                    "group": "5_actions@2"
                 },
                 {
                     "command": "urlMonitor.deleteFolder",
