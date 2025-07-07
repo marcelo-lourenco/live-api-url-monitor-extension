@@ -71,6 +71,12 @@ export class StorageService {
         return newItem;
     }
 
+    async addMultipleItems(newItems: TreeViewItem[]): Promise<void> {
+        const existingItems = await this.getItems();
+        const updatedItems = [...existingItems, ...newItems];
+        await this.globalState.update(this.storageKey, updatedItems);
+    }
+
     async updateItem(itemToUpdate: TreeViewItem): Promise<void> {
         const items = await this.getItems();
         const index = items.findIndex(i => i.id === itemToUpdate.id);

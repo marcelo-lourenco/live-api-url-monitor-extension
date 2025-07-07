@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { v4 as uuidv4 } from 'uuid';
 import { StorageService } from '../services/StorageService';
 import { MonitorService } from '../services/MonitorService';
 import { isUrlItem, type TreeViewItem } from '../models/UrlItem';
@@ -33,37 +34,42 @@ export class ImportItemsCommand {
                 throw new Error('Invalid JSON format: Expected an array of items.');
             }
 
-            let importedCount = 0;
+            const idMap = new Map<string, string>();
+            const newItems: TreeViewItem[] = [];
+
+            // 1. Primeira passagem: Gerar novos IDs e criar um mapa de IDs antigos para novos.
             for (const item of importedItems) {
-                if (!item || typeof item.name !== 'string') {
-                    continue; // Skip invalid or malformed entries
+                if (!item || typeof item.name !== 'string' || !item.id) {
+                    console.warn('Skipping invalid item during import:', item);
+                    continue;
                 }
+                const newId = uuidv4();
+                idMap.set(item.id, newId);
 
-                // Create a copy, remove old ID to let StorageService generate a new one.
-                const cleanItem: any = { ...item };
-                delete cleanItem.id;
-
-                // Handle old format (no type) vs new format, and ensure parentId is set.
-                if (cleanItem.type === undefined) {
-                    // This is an old format UrlItem
-                    cleanItem.type = 'url';
-                    cleanItem.parentId = null;
-                } else {
-                    // This is a new format item, ensure parentId exists and is not undefined.
-                    cleanItem.parentId = cleanItem.parentId || null;
-                }
-
-                if (isUrlItem(cleanItem)) {
-                    cleanItem.lastStatus = undefined;
-                    cleanItem.lastChecked = undefined;
-                }
-                await this.storageService.addItem(cleanItem);
-                importedCount++;
+                const newItem: TreeViewItem = { ...item, id: newId };
+                newItems.push(newItem);
             }
 
-            await this.monitorService.startMonitoring(); // Restart monitoring to include new items
-            vscode.window.showInformationMessage(`Successfully imported ${importedCount} item(s) from ${uri[0].fsPath}`);
-            // The ListView will refresh via the onStatusChange event from MonitorService
+            // 2. Segunda passagem: Atualizar as referências de parentId para os novos IDs.
+            for (const newItem of newItems) {
+                if (newItem.parentId) {
+                    const newParentId = idMap.get(newItem.parentId);
+                    // Se o novo ID do pai for encontrado, use-o. Caso contrário, torna-se um item raiz (null).
+                    newItem.parentId = newParentId || null;
+                }
+
+                if (isUrlItem(newItem)) {
+                    newItem.lastStatus = undefined;
+                    newItem.lastChecked = undefined;
+                }
+            }
+
+            // 3. Adicionar todos os itens de uma vez (requer uma alteração no StorageService).
+            await this.storageService.addMultipleItems(newItems);
+
+            await this.monitorService.startMonitoring();
+            vscode.window.showInformationMessage(`Successfully imported ${newItems.length} item(s) from ${uri[0].fsPath}`);
+
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to import items: ${error instanceof Error ? error.message : String(error)}`);
         }
