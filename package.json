@@ -2,7 +2,7 @@
     "name": "live-api-url-monitor",
     "displayName": "Live URL & API Monitor",
     "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "publisher": "mlourenco",
     "type": "module",
     "icon": "resources/meerkat-logo.png",
