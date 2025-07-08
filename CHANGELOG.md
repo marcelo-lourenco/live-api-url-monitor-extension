@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.1.0] - 2025-07-08
+
+### Added
+
+- Added a "Try it out" feature to test requests directly from the form before saving, providing immediate feedback on the response status, headers, and body.
 
 ## [1.0.4] - 2025-07-07
 
@@ -43,14 +47,3 @@ All notable changes to this project will be documented in this file.
 - Advanced logging system with per-item, per-folder, and global history.
 - Import and export functionality for monitoring items via JSON.
 - Ability to import from a cURL command and export any item as a cURL command.
-
-[Unreleased]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/compare/v1.0.4...HEAD
-[1.0.4]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/releases/tag/v1.0.4
-[1.0.3]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/releases/tag/v1.0.3
-[1.0.2]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/releases/tag/v1.0.2
-[1.0.1]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/releases/tag/v1.0.1
-[1.0.0]: https://github.com/marcelo-lourenco/live-api-url-monitor-extension/releases/tag/v1.0.0
-
----
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

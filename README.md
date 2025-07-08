@@ -27,10 +27,6 @@ We love suggestions. [Leave yours](https://github.com/marcelo-lourenco/live-api-
 
 Contributions are welcome! Please feel free to submit [issues](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/issues) and [pull requests](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/fork).
 
-## Resources and Information
-
-[Code of Conduct](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=coc-ov-file#readme) • [License MIT](https://github.com/marcelo-lourenco/live-api-url-monitor-extension?tab=MIT-1-ov-file#readme) • [Security](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/security/policy) • [Changelog](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/blob/master/CHANGELOG.md) • [Discussions](https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions)
-
 ---
 
 **Live API & URL Monitor** helps developers monitor APIs in real time—without leaving VS Code.

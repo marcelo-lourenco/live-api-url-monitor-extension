@@ -53,9 +53,11 @@ export class ImportItemsCommand {
             // 2. Segunda passagem: Atualizar as referências de parentId para os novos IDs.
             for (const newItem of newItems) {
                 if (newItem.parentId) {
-                    const newParentId = idMap.get(newItem.parentId);
-                    // Se o novo ID do pai for encontrado, use-o. Caso contrário, torna-se um item raiz (null).
-                    newItem.parentId = newParentId || null;
+                    const newParentId = idMap.get(newItem.parentId); // Tenta encontrar o novo ID do pai.
+                    // Se o pai original (newItem.parentId) não foi encontrado no mapa,
+                    // significa que é um item órfão (ou o parentId é inválido).
+                    // Nesse caso, definimos o parentId como nulo para que ele apareça na raiz da treeview.
+                    newItem.parentId = newParentId ?? null;
                 }
 
                 if (isUrlItem(newItem)) {
