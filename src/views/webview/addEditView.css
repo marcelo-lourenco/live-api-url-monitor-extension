@@ -112,12 +112,12 @@ button:hover {
     background: var(--vscode-button-hoverBackground);
 }
 
-button#save {
+button.primary {
     background: var(--vscode-button-primaryBackground, var(--vscode-button-background));
     color: var(--vscode-button-primaryForeground, var(--vscode-button-foreground));
 }
 
-button#save:hover {
+button.primary:hover {
     background: var(--vscode-button-primaryHoverBackground, var(--vscode-button-hoverBackground));
 }
 
@@ -329,6 +329,129 @@ option[data-method="HEAD"] {
     gap: 10px;
     margin-bottom: 10px;
     align-items: center;
+}
+
+/* --- Try it out & Response Section --- */
+.try-out-section {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid var(--vscode-editorGroup-border);
+}
+
+#try-request-button {
+    width: 100%;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.response-container {
+    margin-top: 20px;
+    border: 1px solid var(--vscode-editorGroup-border);
+    border-radius: var(--input-border-radius, 3px);
+    background-color: var(--vscode-sideBar-background);
+}
+
+.response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vscode-editorGroup-border);
+}
+
+.response-status-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.response-status-badge {
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: var(--vscode-button-foreground);
+}
+
+.response-status-badge.status-up {
+    background-color: var(--vscode-terminal-ansiGreen);
+}
+
+.response-status-badge.status-down {
+    background-color: var(--vscode-terminal-ansiYellow);
+}
+
+.response-status-badge.status-error {
+    background-color: var(--vscode-terminal-ansiRed);
+}
+
+.response-status-badge.status-loading {
+    background-color: var(--vscode-terminal-ansiBlue);
+}
+
+#response-status-text {
+    font-weight: bold;
+}
+
+.response-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+}
+
+.response-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--vscode-editorGroup-border);
+}
+
+.response-tab-button {
+    flex-grow: 1;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: var(--vscode-tab-inactiveForeground);
+}
+
+.response-tab-button.active {
+    color: var(--vscode-tab-activeForeground);
+    border-bottom-color: var(--vscode-tab-activeBorder);
+}
+
+.response-tab-button:hover:not(.active) {
+    background: var(--vscode-tab-hoverBackground);
+}
+
+.response-content {
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.response-tab-content {
+    display: none;
+}
+
+.response-tab-content.active {
+    display: block;
+}
+
+.response-tab-content pre {
+    margin: 0;
+    padding: 12px;
+    background-color: var(--vscode-editor-background);
+}
+
+.response-tab-content code {
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 /* --- Sidebar Styles --- */

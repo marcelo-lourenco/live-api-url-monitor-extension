@@ -61,11 +61,13 @@
             },
             {
                 "command": "urlMonitor.addItemInContext",
-                "title": "New Item"
+                "title": "New Item",
+                "icon": "$(add)"
             },
             {
                 "command": "urlMonitor.addFolderInContext",
-                "title": "New Folder"
+                "title": "New Folder",
+                "icon": "$(new-folder)"
             },
             {
                 "command": "urlMonitor.showLog",

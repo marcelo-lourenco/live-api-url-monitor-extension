@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     const storageService = new StorageService(context.globalState);
     logService = new LogService(context);
     monitorService = new MonitorService(storageService, logService);
-    const addEditView = new AddEditView(context, logService);
+    const addEditView = new AddEditView(context, logService, monitorService);
     const logViewProvider = new LogViewProvider(logService);
     // Passa monitorService para ListView
     const exportItemsCommand = new ExportItemsCommand(storageService);

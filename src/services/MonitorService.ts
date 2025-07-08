@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import * as vscode from 'vscode';
 import axios, { type AxiosRequestConfig, type AxiosError } from 'axios';
 import type { UrlItem } from '../models/UrlItem';
@@ -8,6 +9,18 @@ interface CheckResult {
     status: 'up' | 'down';
     statusCode?: number;
     durationMs: number;
+    error?: string;
+}
+
+// New interface for detailed test results from "Try it out"
+export interface TestResult {
+    status: 'up' | 'down' | 'error';
+    statusCode?: number;
+    statusText?: string;
+    durationMs: number;
+    sizeBytes?: number;
+    headers?: Record<string, any>;
+    body?: any; // Can be string, object, etc.
     error?: string;
 }
 
@@ -22,6 +35,125 @@ export class MonitorService {
         private logService: LogService
     ) { }
 
+    /**
+     * Executes a request based on a temporary UrlItem object from the form.
+     * This is used for the "Try it out" feature and returns a detailed result.
+     * It does not log or save status to storage.
+     */
+    public async testRequest(item: Omit<UrlItem, 'id'>): Promise<TestResult> {
+        const startTime = Date.now();
+        try {
+            const headers = { ...(item.headers || {}) };
+            const config: AxiosRequestConfig = {
+                method: item.method,
+                url: item.url,
+                headers: headers,
+                timeout: 10000,
+                // Important for getting raw response data to calculate size correctly
+                transformResponse: [(data) => data],
+            };
+
+            if (!config.url) {
+                return {
+                    status: 'error',
+                    error: 'URL is not defined.',
+                    durationMs: Date.now() - startTime
+                };
+            }
+
+            // This logic is duplicated from performCheckLogic. It's kept separate
+            // to avoid impacting the regular monitoring flow with large response bodies.
+            if (item.queryParams && item.queryParams.length > 0) {
+                const url = new URL(config.url);
+                item.queryParams.forEach(param => {
+                    if (param.key) {
+                        url.searchParams.append(param.key, param.value);
+                    }
+                });
+                config.url = url.toString();
+            }
+
+            if (item.body) {
+                if (item.body.type === 'raw' && item.body.content) {
+                    config.data = item.body.content;
+                    if (!headers['Content-Type']) {
+                        try {
+                            JSON.parse(item.body.content);
+                            headers['Content-Type'] = 'application/json';
+                        } catch {
+                            headers['Content-Type'] = 'text/plain';
+                        }
+                    }
+                }
+            }
+            const auth = item.auth || { type: 'noauth' };
+
+            switch (auth.type) {
+                case 'basic':
+                    if (auth.username) {
+                        config.auth = {
+                            username: auth.username,
+                            password: auth.password || ''
+                        };
+                    }
+                    break;
+                case 'bearer':
+                    if (auth.token) {
+                        headers['Authorization'] = `Bearer ${auth.token}`;
+                    }
+                    break;
+                case 'apikey':
+                    if (auth.key && auth.value) {
+                        if (auth.addTo === 'header') {
+                            headers[auth.key] = auth.value;
+                        } else {
+                            const url = new URL(config.url);
+                            url.searchParams.append(auth.key, auth.value);
+                            config.url = url.toString();
+                        }
+                    }
+                    break;
+            }
+
+            const response = await axios(config);
+            const durationMs = Date.now() - startTime;
+            const isSuccess = response.status === item.expectedStatusCode;
+            const responseBody = response.data;
+            const sizeBytes = response.headers['content-length']
+                ? parseInt(response.headers['content-length'], 10)
+                : (responseBody ? new TextEncoder().encode(responseBody).length : 0);
+
+            return {
+                status: isSuccess ? 'up' : 'down',
+                statusCode: response.status,
+                statusText: response.statusText,
+                durationMs: durationMs,
+                sizeBytes: sizeBytes,
+                headers: response.headers,
+                body: responseBody,
+                error: isSuccess ? undefined : `Expected status ${item.expectedStatusCode}, but received ${response.status}.`
+            };
+        } catch (error: any) {
+            const durationMs = Date.now() - startTime;
+            const axiosError = error as AxiosError;
+            const responseBody = axiosError.response?.data;
+            const sizeBytes = axiosError.response?.headers?.['content-length']
+                ? parseInt(axiosError.response.headers['content-length'], 10)
+                : (responseBody ? new TextEncoder().encode(JSON.stringify(responseBody)).length : 0);
+
+            return {
+                status: 'error',
+                statusCode: axiosError.response?.status,
+                statusText: axiosError.response?.statusText,
+                durationMs: durationMs,
+                sizeBytes: sizeBytes,
+                headers: axiosError.response?.headers,
+                body: responseBody,
+                error: axiosError.message
+            };
+        }
+    }
+
     private async performCheckLogic(item: UrlItem): Promise<CheckResult> {
         // Immediately return if the item is paused.
         if (item.isPaused) {
@@ -34,7 +166,7 @@ export class MonitorService {
 
         const startTime = Date.now();
         try {
-            const headers = item.headers || {};
+            const headers = { ...(item.headers || {}) };
             const config: AxiosRequestConfig = {
                 method: item.method,
                 url: item.url,
@@ -91,7 +223,7 @@ export class MonitorService {
                     break;
                 case 'apikey':
                     if (auth.key && auth.value) {
-                        if (auth.addTo === 'header') { // This line was not flagged, but also uses '!'
+                        if (auth.addTo === 'header') {
                             headers[auth.key] = auth.value;
                         } else {
                             const url = new URL(config.url);

@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { createDefaultUrlItem, type UrlItem } from '../models/UrlItem';
 import { LogService } from '../services/LogService';
+import { MonitorService, type TestResult } from '../services/MonitorService';
 
 export class AddEditView {
     private panel: vscode.WebviewPanel | undefined;
@@ -11,7 +12,8 @@ export class AddEditView {
 
     constructor(
         private context: vscode.ExtensionContext,
-        private logService: LogService
+        private logService: LogService,
+        private monitorService: MonitorService
     ) { }
 
     public async showAddForm(parentId: string | null = null): Promise<Omit<UrlItem, 'id' | 'lastStatus' | 'lastChecked'> | undefined> {
@@ -102,7 +104,10 @@ export class AddEditView {
                     const dataToSave = message.data;
 
                     const rawIntervalInput = parseInt(dataToSave.intervalValue);
-                    if (isNaN(rawIntervalInput) || rawIntervalInput < 1) return;
+                    if (isNaN(rawIntervalInput) || rawIntervalInput < 1) {
+                        vscode.window.showErrorMessage('Invalid interval value.');
+                        return;
+                    }
 
                     let intervalInSeconds = rawIntervalInput;
                     if (dataToSave.intervalUnit === 'minutes') {
@@ -112,7 +117,10 @@ export class AddEditView {
                     }
 
                     const MIN_INTERVAL_SECONDS = 5;
-                    if (intervalInSeconds < MIN_INTERVAL_SECONDS) return;
+                    if (intervalInSeconds < MIN_INTERVAL_SECONDS) {
+                        vscode.window.showErrorMessage(`Interval must be at least ${MIN_INTERVAL_SECONDS} seconds.`);
+                        return;
+                    }
 
                     const finalData: any = {
                         name: dataToSave.name,
@@ -168,6 +176,22 @@ export class AddEditView {
                     this.panel.webview.postMessage({ command: 'logsCleared' });
                 }
                 break;
+            case 'tryRequest':
+                if (this.panel) {
+                    try {
+                        const testItem: Omit<UrlItem, 'id'> = message.data;
+                        const result: TestResult = await this.monitorService.testRequest(testItem);
+                        this.panel.webview.postMessage({ command: 'testResult', result: result });
+                    } catch (error) {
+                        const result: TestResult = {
+                            status: 'error',
+                            durationMs: 0,
+                            error: error instanceof Error ? error.message : String(error)
+                        };
+                        this.panel.webview.postMessage({ command: 'testResult', result: result });
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -175,7 +199,10 @@ export class AddEditView {
 
     private _getHtmlForWebview(): string {
         // This method should only be called when this.panel is defined.
-        const panel = this.panel as vscode.WebviewPanel;
+        if (!this.panel) {
+            throw new Error("Cannot get HTML for a non-existent panel.");
+        }
+        const panel = this.panel;
 
         const htmlPath = path.join(this.context.extensionPath, 'dist', 'webview', 'addEditView.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf-8');

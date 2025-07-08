@@ -214,6 +214,40 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Try it Out Section -->
+            <div class="try-out-section">
+                <button id="try-request-button" class="primary">
+                    <i class="codicon codicon-play"></i> Try it out
+                </button>
+            </div>
+
+            <!-- Response Section -->
+            <div id="response-container" class="response-container" style="display: none;">
+                <div class="response-header">
+                    <div class="response-status-container">
+                        <span id="response-status-badge" class="response-status-badge"></span>
+                        <span id="response-status-text"></span>
+                    </div>
+                    <div class="response-meta">
+                        <span>Time: <strong id="response-time"></strong></span>
+                        <span>Size: <strong id="response-size"></strong></span>
+                    </div>
+                </div>
+                <div class="response-tabs">
+                    <button class="response-tab-button active" data-tab="response-body">Body</button>
+                    <button class="response-tab-button" data-tab="response-headers">Headers</button>
+                </div>
+                <div class="response-content">
+                    <div id="response-body-content" class="response-tab-content active">
+                        <pre><code id="response-body-code"></code></pre>
+                    </div>
+                    <div id="response-headers-content" class="response-tab-content">
+                        <pre><code id="response-headers-code"></code></pre>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Resizer Handle -->
