@@ -60,6 +60,14 @@
                 "icon": "$(new-folder)"
             },
             {
+                "command": "urlMonitor.addItemInContext",
+                "title": "New Item"
+            },
+            {
+                "command": "urlMonitor.addFolderInContext",
+                "title": "New Folder"
+            },
+            {
                 "command": "urlMonitor.showLog",
                 "title": "Show Log",
                 "icon": "$(list-flat)"
@@ -282,12 +290,12 @@
             ],
             "view/item/context": [
                 {
-                    "command": "urlMonitor.addItem",
+                    "command": "urlMonitor.addItemInContext",
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
                 {
-                    "command": "urlMonitor.addFolder",
+                    "command": "urlMonitor.addFolderInContext",
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "inline"
                 },
@@ -337,12 +345,12 @@
                     "group": "1_actions@1"
                 },
                 {
-                    "command": "urlMonitor.addItem",
+                    "command": "urlMonitor.addItemInContext",
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "2_new@1"
                 },
                 {
-                    "command": "urlMonitor.addFolder",
+                    "command": "urlMonitor.addFolderInContext",
                     "when": "viewItem == 'folder' || viewItem == 'folder-running' || viewItem == 'folder-paused' || viewItem == 'folder-mixed'",
                     "group": "2_new@2"
                 },

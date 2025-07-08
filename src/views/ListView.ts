@@ -59,7 +59,8 @@ export class ListView {
 
             // Item specific commands
             vscode.commands.registerCommand('urlMonitor.expandAll', () => this.expandAll()),
-            vscode.commands.registerCommand('urlMonitor.addItem', (context?: FolderItem) => this.addItem(context)),
+            vscode.commands.registerCommand('urlMonitor.addItem', () => this.addItem(undefined)),
+            vscode.commands.registerCommand('urlMonitor.addItemInContext', (context?: FolderItem) => this.addItem(context)),
             vscode.commands.registerCommand('urlMonitor.showLog', (item?: TreeViewItem) => this.showLog(item)),
             vscode.commands.registerCommand('urlMonitor.refreshItem', (item: UrlItem) => this.refreshItem(item)),
             vscode.commands.registerCommand('urlMonitor.duplicateItem', (item: UrlItem) => this.duplicate(item)),
@@ -68,7 +69,8 @@ export class ListView {
             vscode.commands.registerCommand('urlMonitor.copyAsCurl', (item: UrlItem) => this.copyAsCurl(item)),
 
             // Folder specific commands
-            vscode.commands.registerCommand('urlMonitor.addFolder', (context?: FolderItem) => this.addFolder(context)),
+            vscode.commands.registerCommand('urlMonitor.addFolder', () => this.addFolder(undefined)),
+            vscode.commands.registerCommand('urlMonitor.addFolderInContext', (context?: FolderItem) => this.addFolder(context)),
             vscode.commands.registerCommand('urlMonitor.duplicateFolder', (folder: FolderItem) => this.duplicate(folder)),
             vscode.commands.registerCommand('urlMonitor.refreshFolder', (item: FolderItem) => this.refreshFolder(item)),
             vscode.commands.registerCommand('urlMonitor.renameFolder', (item: FolderItem) => this.renameFolder(item, false)),
