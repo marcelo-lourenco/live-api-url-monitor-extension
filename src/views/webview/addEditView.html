@@ -24,43 +24,16 @@
     <div class="main-wrapper">
         <div class="form-container">
             <div class="form-row">
-                <div class="form-group col-6">
+                <div class="form-group">
                     <label for="name">Item Name *</label>
                     <input type="text" id="name" maxlength="60" required>
-                </div>
-                <div class="form-group col-2">
-                    <label for="statusCode" style="min-width: 150px;">Expected Status Code</label>
-                    <input type="number" id="statusCode" value="200" min="100" max="599">
-                </div>
-                <div class="form-group col-2">
-                    <label for="intervalValue">Check Interval</label>
-                    <div class="interval-group ">
-                        <div class="form-group col-1">
-                            <input type="number" id="intervalValue" value="1" min="1">
-                        </div>
-                        <div class="form-group col-1">
-                            <select id="intervalUnit">
-                                <option value="seconds">Seconds</option>
-                                <option value="minutes" selected>Minutes</option>
-                                <option value="hours">Hours</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group col-2">
-                    <label for="log-level">Log Level</label>
-                    <select id="log-level" name="logLevel">
-                        <option value="error" selected>Save only on error</option>
-                        <option value="all">Save all logs</option>
-                        <option value="none">Don't save logs</option>
-                    </select>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group col-1">
                     <label for="method">Method</label>
-                    <select id="method" style="min-width: 70px;">
+                    <select id="method">
                         <option value="GET" data-method="GET">GET</option>
                         <option value="POST" data-method="POST">POST</option>
                         <option value="PUT" data-method="PUT">PUT</option>
@@ -70,121 +43,124 @@
                         <option value="HEAD" data-method="HEAD">HEAD</option>
                     </select>
                 </div>
-                <div class="form-group col-8">
+                <div class="form-group col-11">
                     <label for="url">URL *</label>
                     <input type="url" id="url" required placeholder="https://example.com/api/status">
                 </div>
             </div>
 
-            <div class="advanced">
-                <h2>Advanced Options</h2>
+            <div class="main-content-row">
 
-                <div class="tabs">
-                    <div class="tab-buttons">
-                        <button class="tab-button active" data-tab="params">Parameters</button>
-                        <button class="tab-button" data-tab="auth">Authorization</button>
-                        <button class="tab-button" data-tab="headers">Headers</button>
-                        <button class="tab-button" data-tab="body">Body</button>
-                    </div>
-
-                    <div id="tab-params" class="tab-content active">
-                        <h4>Query Parameters</h4>
-                        <div id="query-params-container">
-                            <!-- Dynamic rows for key-value pairs -->
+                <div class="advanced">
+                    <h2>Advanced Options</h2>
+                    <div class="tabs">
+                        <div class="tab-buttons">
+                            <button class="tab-button active" data-tab="params">Parameters</button>
+                            <button class="tab-button" data-tab="auth">Authorization</button>
+                            <button class="tab-button" data-tab="headers">Headers</button>
+                            <button class="tab-button" data-tab="body">Body</button>
                         </div>
-                        <button id="add-query-param" class="secondary small-button">Add Query Parameter</button>
-                    </div>
 
-                    <div id="tab-auth" class="tab-content">
-                        <div class="form-group">
-                            <h4>Authorization</h4>
-                            <div class="form-group">
-                                <label for="authType">Type</label>
-                                <select id="authType">
-                                    <option value="noauth">No Auth</option>
-                                    <option value="apikey">API Key</option>
-                                    <option value="basic">Basic Auth</option>
-                                    <option value="bearer">Bearer Token</option>
-                                    <option value="oauth2">OAuth 2.0</option>
-                                    <option value="awsv4">AWS Signature</option>
-                                    <option value="oauth1">OAuth 1.0</option>
-                                </select>
+                        <div id="tab-params" class="tab-content active">
+                            <h4>Query Parameters</h4>
+                            <div id="query-params-container">
+                                <!-- Dynamic rows for key-value pairs -->
                             </div>
+                            <button id="add-query-param" class="secondary small-button">Add Query Parameter</button>
                         </div>
 
-                        <div id="auth-fields-container">
-                            <!-- API Key -->
-                            <div id="auth-apikey" class="auth-fields" style="display: none;">
-                                <div class="form-row">
-                                    <div class="form-group"><label for="apiKeyKey">Key</label><input type="text"
-                                            id="apiKeyKey" placeholder="e.g. api_key"></div>
-                                    <div class="form-group"><label for="apiKeyValue">Value</label><input type="text"
-                                            id="apiKeyValue"></div>
-                                </div>
+                        <div id="tab-auth" class="tab-content">
+                            <div class="form-group">
+                                <h4>Authorization</h4>
                                 <div class="form-group">
-                                    <label for="apiKeyAddTo">Add to</label>
-                                    <select id="apiKeyAddTo">
-                                        <option value="header">Header</option>
-                                        <option value="query">Query Params</option>
+                                    <label for="authType">Type</label>
+                                    <select id="authType">
+                                        <option value="noauth">No Auth</option>
+                                        <option value="apikey">API Key</option>
+                                        <option value="basic">Basic Auth</option>
+                                        <option value="bearer">Bearer Token</option>
+                                        <option value="oauth2">OAuth 2.0</option>
+                                        <option value="awsv4">AWS Signature</option>
+                                        <option value="oauth1">OAuth 1.0</option>
                                     </select>
                                 </div>
                             </div>
-                            <!-- Basic Auth -->
-                            <div id="auth-basic" class="auth-fields" style="display: none;">
-                                <div class="form-row">
-                                    <div class="form-group"><label for="basicUsername">Username</label><input
-                                            type="text" id="basicUsername"></div>
-                                    <div class="form-group"><label for="basicPassword">Password</label><input
-                                            type="password" id="basicPassword"></div>
+
+                            <div id="auth-fields-container">
+                                <!-- API Key -->
+                                <div id="auth-apikey" class="auth-fields" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group"><label for="apiKeyKey">Key</label><input type="text"
+                                                id="apiKeyKey" placeholder="e.g. api_key"></div>
+                                        <div class="form-group"><label for="apiKeyValue">Value</label><input type="text"
+                                                id="apiKeyValue"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="apiKeyAddTo">Add to</label>
+                                        <select id="apiKeyAddTo">
+                                            <option value="header">Header</option>
+                                            <option value="query">Query Params</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- Basic Auth -->
+                                <div id="auth-basic" class="auth-fields" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group"><label for="basicUsername">Username</label><input
+                                                type="text" id="basicUsername"></div>
+                                        <div class="form-group"><label for="basicPassword">Password</label><input
+                                                type="password" id="basicPassword"></div>
+                                    </div>
+                                </div>
+                                <!-- Bearer Token -->
+                                <div id="auth-bearer" class="auth-fields" style="display: none;">
+                                    <div class="form-group"><label for="bearerToken">Token</label><textarea
+                                            id="bearerToken" rows="3"></textarea></div>
+                                </div>
+                                <!-- OAuth 2.0 -->
+                                <div id="auth-oauth2" class="auth-fields" style="display: none;">
+                                    <div class="form-group"><label for="oauth2Token">Access Token</label><textarea
+                                            id="oauth2Token" rows="3"></textarea></div>
+                                    <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input
+                                            type="text" id="oauth2HeaderPrefix" value="Bearer"></div>
+                                    <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing
+                                        token.
+                                    </p>
+                                </div>
+                                <!-- AWS Signature -->
+                                <div id="auth-awsv4" class="auth-fields" style="display: none;">
+                                    <p>AWS Signature is not yet fully implemented for execution but settings will be
+                                        saved.
+                                    </p>
+                                </div>
+                                <!-- OAuth 1.0 -->
+                                <div id="auth-oauth1" class="auth-fields" style="display: none;">
+                                    <p>OAuth 1.0 is not yet fully implemented for execution but settings will be saved.
+                                    </p>
                                 </div>
                             </div>
-                            <!-- Bearer Token -->
-                            <div id="auth-bearer" class="auth-fields" style="display: none;">
-                                <div class="form-group"><label for="bearerToken">Token</label><textarea id="bearerToken"
-                                        rows="3"></textarea></div>
-                            </div>
-                            <!-- OAuth 2.0 -->
-                            <div id="auth-oauth2" class="auth-fields" style="display: none;">
-                                <div class="form-group"><label for="oauth2Token">Access Token</label><textarea
-                                        id="oauth2Token" rows="3"></textarea></div>
-                                <div class="form-group"><label for="oauth2HeaderPrefix">Header Prefix</label><input
-                                        type="text" id="oauth2HeaderPrefix" value="Bearer"></div>
-                                <p>Note: The full OAuth 2.0 flow is not supported. Please provide a pre-existing token.
-                                </p>
-                            </div>
-                            <!-- AWS Signature -->
-                            <div id="auth-awsv4" class="auth-fields" style="display: none;">
-                                <p>AWS Signature is not yet fully implemented for execution but settings will be saved.
-                                </p>
-                            </div>
-                            <!-- OAuth 1.0 -->
-                            <div id="auth-oauth1" class="auth-fields" style="display: none;">
-                                <p>OAuth 1.0 is not yet fully implemented for execution but settings will be saved.</p>
-                            </div>
                         </div>
-                    </div>
 
-                    <div id="tab-headers" class="tab-content">
-                        <h4>Headers</h4>
-                        <div id="headers-container">
-                            <!-- Dynamic rows for key-value pairs -->
-                        </div>
-                        <button type="button" id="add-header" class="secondary small-button">Add Header</button>
-                    </div>
-
-                    <div id="tab-body" class="tab-content">
-                        <h4>Request Body</h4>
-                        <div class="form-row">
-                            <div class="form-group col-2">
-                                <label for="bodyType">Type</label>
-                                <select id="bodyType">
-                                    <option value="none">none</option>
-                                    <option value="raw">raw</option>
-                                    <!-- Add other types later if needed: form-data, x-www-form-urlencoded, binary, GraphQL -->
-                                </select>
+                        <div id="tab-headers" class="tab-content">
+                            <h4>Headers</h4>
+                            <div id="headers-container">
+                                <!-- Dynamic rows for key-value pairs -->
                             </div>
-                            <div class="form-group col-2">
-                                <div id="div-raw-language" style="display: none;">
+                            <button type="button" id="add-header" class="secondary small-button">Add Header</button>
+                        </div>
+
+                        <div id="tab-body" class="tab-content">
+                            <h4>Request Body</h4>
+                            <div class="body-controls">
+                                <div class="form-group">
+                                    <label for="bodyType">Type</label>
+                                    <select id="bodyType">
+                                        <option value="none">none</option>
+                                        <option value="raw">raw</option>
+                                        <!-- Add other types later if needed: form-data, x-www-form-urlencoded, binary, GraphQL -->
+                                    </select>
+                                </div>
+                                <div class="form-group" id="div-raw-language" style="display: none;">
                                     <label for="rawBodyLanguage">Language</label>
                                     <select id="rawBodyLanguage">
                                         <option value="json" selected>JSON</option>
@@ -193,24 +169,44 @@
                                         <option value="text">Text</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="form-group col-2">
                                 <div id="div-beautify-btn" style="display: none;">
-                                    <label for="beautify-btn">&nbsp;</label>
                                     <button type="button" id="beautify-btn"
                                         class="secondary small-button">Beautify</button>
                                 </div>
                             </div>
-                            <div class="form-group col-9">
-                                &nbsp;
+
+                            <div class="form-group" id="body-raw-container" style="display: none;">
+                                <label for="rawBody">Raw Body</label>
+                                <textarea id="rawBody" rows="10"
+                                    placeholder="Enter raw request body (e.g., JSON, XML, text)"></textarea>
                             </div>
                         </div>
-
-                        <div class="form-group" id="body-raw-container" style="display: none;">
-                            <label for="rawBody">Raw Body</label>
-                            <textarea id="rawBody" rows="10"
-                                placeholder="Enter raw request body (e.g., JSON, XML, text)"></textarea>
+                    </div>
+                </div>
+                <div class="settings">
+                    <h2>Settings</h2>
+                    <div class="form-group">
+                        <label for="statusCode">Expected Status</label>
+                        <input type="number" id="statusCode" value="200" min="100" max="599">
+                    </div>
+                    <div class="form-group">
+                        <label for="intervalValue">Check Interval</label>
+                        <div class="interval-group">
+                            <input type="number" id="intervalValue" value="1" min="1">
+                            <select id="intervalUnit">
+                                <option value="seconds">Seconds</option>
+                                <option value="minutes" selected>Minutes</option>
+                                <option value="hours">Hours</option>
+                            </select>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="log-level">Log Level</label>
+                        <select id="log-level" name="logLevel">
+                            <option value="error" selected>Save only on error</option>
+                            <option value="all">Save all logs</option>
+                            <option value="none">Don't save logs</option>
+                        </select>
                     </div>
                 </div>
             </div>
