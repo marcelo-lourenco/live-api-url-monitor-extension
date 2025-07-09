@@ -6,7 +6,7 @@ export class LogService {
 
     constructor(context: vscode.ExtensionContext) {
         this.logFileUri = vscode.Uri.joinPath(context.globalStorageUri, 'requests.log.ndjson');
-        // Ensure the global storage directory exists
+        // Ensure the global storage directory exists (ignore errors if already exists)
         vscode.workspace.fs.createDirectory(context.globalStorageUri).then(
             () => { /* success - no action needed */ },
             () => { /* suppress errors, e.g., if directory already exists */ }
@@ -26,7 +26,7 @@ export class LogService {
             try {
                 existingContent = await vscode.workspace.fs.readFile(this.logFileUri);
             } catch {
-                // File doesn't exist, which is fine. It will be created.
+                // File doesn't exist, will be created
             }
             const newContent = new Uint8Array(existingContent.length + content.length);
             newContent.set(existingContent, 0);
@@ -75,14 +75,14 @@ export class LogService {
             const logsToKeep = allLogs.filter(log => log.itemId !== itemId);
 
             if (logsToKeep.length === allLogs.length) {
-                return; // No logs for this item were found.
+                return; // No logs for this item were found
             }
 
             if (logsToKeep.length === 0) {
-                // If no logs are left at all, just delete the file.
+                // If no logs are left, delete the file
                 await this.clearAllLogs();
             } else {
-                // Re-write the file with the remaining logs.
+                // Rewrite the file with the remaining logs
                 const newLogContent = logsToKeep.map(log => JSON.stringify(log)).join('\n') + '\n';
                 const content = new TextEncoder().encode(newLogContent);
                 await vscode.workspace.fs.writeFile(this.logFileUri, content);

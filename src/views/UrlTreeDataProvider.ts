@@ -96,7 +96,7 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             if (element.isPaused) {
                 treeItem.contextValue = 'urlItem-paused';
                 iconId = 'circle-slash';
-                iconColorId = 'disabledForeground'; // Cor cinza para estado pausado
+                iconColorId = 'disabledForeground'; // Gray for paused state
             } else {
                 treeItem.contextValue = 'urlItem-running';
                 if (element.lastStatus === 'up') {
@@ -129,7 +129,7 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
 
             return treeItem;
         } else {
-            // It's a FolderItem
+            // FolderItem logic
             const allItems = await this.storageService.getItems();
             const folderHealthStatus = this.getFolderStatus(element.id, allItems);
             const folderPauseState = this.getFolderPauseState(element.id, allItems);
@@ -140,32 +140,32 @@ export class UrlTreeDataProvider implements vscode.TreeDataProvider<TreeViewItem
             let iconId: string;
             let iconColorId: string | undefined;
 
-            // O estado visual de uma pasta é determinado primeiro pelo seu estado de pausa e, em seguida, pela saúde de seus filhos ativos.
+            // Folder visual state is determined first by pause state, then by the health of its active children.
             if (folderPauseState === 'paused') {
-                // Se todos os filhos estiverem pausados, a pasta é exibida como pausada (cinza).
+                // If all children are paused, folder is shown as paused (gray).
                 treeItem.contextValue = 'folder-paused';
                 iconId = 'folder';
                 iconColorId = 'disabledForeground';
             } else {
-                // Se a pasta tiver itens ativos, sua cor reflete o status deles.
+                // If folder has active items, its color reflects their status.
                 switch (folderHealthStatus) {
                     case 'up':
                         iconId = 'folder-active';
-                        iconColorId = 'testing.iconPassed'; // Verde
+                        iconColorId = 'testing.iconPassed'; // Green
                         break;
                     case 'down':
                         iconId = 'folder-active';
-                        iconColorId = 'testing.iconFailed'; // Vermelho
+                        iconColorId = 'testing.iconFailed'; // Red
                         break;
-                    default: // 'unknown' ou vazia
+                    default: // 'unknown' or empty
                         iconId = 'folder';
-                        iconColorId = undefined; // Usa a cor padrão do tema
+                        iconColorId = undefined; // Use theme default
                 }
 
-                // Define o contextValue para os comandos do menu
+                // Set contextValue for menu commands
                 if (folderPauseState === 'running') {
                     treeItem.contextValue = 'folder-running';
-                } else { // 'mixed' ou 'empty'
+                } else {
                     treeItem.contextValue = folderPauseState === 'mixed' ? 'folder-mixed' : 'folder';
                 }
             }

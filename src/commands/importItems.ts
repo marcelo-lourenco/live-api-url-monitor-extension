@@ -34,10 +34,9 @@ export class ImportItemsCommand {
                 throw new Error('Invalid JSON format: Expected an array of items.');
             }
 
+            // First pass: Generate new IDs and create a map of old to new IDs
             const idMap = new Map<string, string>();
             const newItems: TreeViewItem[] = [];
-
-            // 1. Primeira passagem: Gerar novos IDs e criar um mapa de IDs antigos para novos.
             for (const item of importedItems) {
                 if (!item || typeof item.name !== 'string' || !item.id) {
                     console.warn('Skipping invalid item during import:', item);
@@ -50,13 +49,13 @@ export class ImportItemsCommand {
                 newItems.push(newItem);
             }
 
-            // 2. Segunda passagem: Atualizar as referências de parentId para os novos IDs.
+            // Second pass: Update parentId references to new IDs
             for (const newItem of newItems) {
                 if (newItem.parentId) {
-                    const newParentId = idMap.get(newItem.parentId); // Tenta encontrar o novo ID do pai.
-                    // Se o pai original (newItem.parentId) não foi encontrado no mapa,
-                    // significa que é um item órfão (ou o parentId é inválido).
-                    // Nesse caso, definimos o parentId como nulo para que ele apareça na raiz da treeview.
+                    const newParentId = idMap.get(newItem.parentId);
+                    // If the original parent (newItem.parentId) was not found in the map,
+                    // it means it's an orphan item (or the parentId is invalid).
+                    // In this case, set parentId to null so it appears at the root.
                     newItem.parentId = newParentId ?? null;
                 }
 
@@ -66,7 +65,7 @@ export class ImportItemsCommand {
                 }
             }
 
-            // 3. Adicionar todos os itens de uma vez (requer uma alteração no StorageService).
+            // Add all items at once (requires a change in StorageService)
             await this.storageService.addMultipleItems(newItems);
 
             await this.monitorService.startMonitoring();

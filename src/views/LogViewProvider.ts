@@ -21,7 +21,7 @@ export class LogViewProvider implements vscode.TextDocumentContentProvider {
             return `No log entries found for: ${uri.path.substring(1)}\n`;
         }
 
-        // Reverse logs to show most recent first
+        // Show most recent logs first
         logs.reverse();
 
         const formattedLogs = logs.map(this.formatLogEntry).join('\n');
@@ -37,10 +37,13 @@ export class LogViewProvider implements vscode.TextDocumentContentProvider {
         if (log.error) {
             line += `\n  └─ ERROR: ${log.error}`;
         }
-        // return line + '\n' + '-'.repeat(80);
         return line;
     }
 
+    /**
+     * Opens the log view for the given title and optional item IDs.
+     * Triggers a refresh to ensure the content is up to date.
+     */
     public async showLog(title: string, itemIds?: string[]): Promise<void> {
         const query = itemIds ? `?ids=${itemIds.join(',')}` : '';
         const uri = vscode.Uri.parse(`${LogViewProvider.scheme}:/${title}${query}`);

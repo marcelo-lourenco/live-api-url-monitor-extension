@@ -3,7 +3,7 @@ import { StorageService } from '../services/StorageService';
 import { MonitorService } from '../services/MonitorService';
 import type { UrlItem, AuthConfig, RequestBody, QueryParam } from '../models/UrlItem';
 
-// A type guard to check if a method is a valid UrlItem method
+// Checks if the HTTP method is valid for UrlItem
 function isValidMethod(method: string): method is UrlItem['method'] {
     const validMethods: Array<UrlItem['method']> = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
     return validMethods.includes(method as UrlItem['method']);
@@ -23,7 +23,7 @@ export class ImportCurlCommand {
         });
 
         if (!curlCommand) {
-            return false; // User cancelled
+            return false;
         }
 
         try {
@@ -35,19 +35,19 @@ export class ImportCurlCommand {
             });
 
             if (!name) {
-                return false; // User cancelled
+                return false;
             }
 
             const newItem: Omit<UrlItem, 'id'> = {
                 ...parsedData,
                 name: name,
-                interval: 60, // Default interval
-                expectedStatusCode: 200, // Default status code
+                interval: 60,
+                expectedStatusCode: 200,
             };
 
             const addedItem = await this.storageService.addItem(newItem);
             await this.monitorService.checkItemImmediately(addedItem as UrlItem);
-            await this.monitorService.startMonitoring(); // Restart monitoring to include the new item
+            await this.monitorService.startMonitoring();
 
             vscode.window.showInformationMessage(`Successfully imported from cURL: "${addedItem.name}"`);
             return true;
@@ -79,8 +79,10 @@ export class ImportCurlCommand {
             body: { type: 'none' },
         };
 
+        // Remove line continuations and extra spaces from cURL command
         const cleanCurl = curl.replace(/\\\n/g, ' ').replace(/\s\s+/g, ' ').trim();
 
+        // Extract URL from cURL command
         const urlMatch = cleanCurl.match(/'(https?:\/\/[^']*)'|"(https?:\/\/[^"]*)"|\b(https?:\/\/\S+)\b/);
         if (!urlMatch) {
             throw new Error('Could not parse a valid URL.');
@@ -93,6 +95,7 @@ export class ImportCurlCommand {
             result.queryParams.push({ key, value });
         });
 
+        // Extract HTTP method if specified in cURL command
         const methodMatch = cleanCurl.match(/-X\s+([A-Z]+)|--request\s+([A-Z]+)/i);
         if (methodMatch) {
             const method = (methodMatch[1] || methodMatch[2]).toUpperCase();
@@ -101,11 +104,11 @@ export class ImportCurlCommand {
             }
         }
 
-        // This regex handles both -H and --header, and single or double quotes.
+        // Extract headers from cURL command
         const headerRegex = /(?:-H|--header)\s+('([^']*)'|"([^"]*)")/g;
         let match;
         while ((match = headerRegex.exec(cleanCurl)) !== null) {
-            const headerLine = match[2] || match[3]; // Group 2 for single quotes, group 3 for double quotes
+            const headerLine = match[2] || match[3];
             if (!headerLine) { continue; }
 
             const separatorIndex = headerLine.indexOf(':');
@@ -116,17 +119,20 @@ export class ImportCurlCommand {
             }
         }
 
+        // Extract request body if present
         const dataMatch = cleanCurl.match(/--data(?:-raw)?\s+'([^']*)'|--data(?:-raw)?\s+"([^"]*)"/);
         if (dataMatch) {
             const content = dataMatch[1] || dataMatch[2];
             if (content) {
                 result.body = { type: 'raw', content: content };
+                // If body is present and method is GET, change to POST
                 if (result.method === 'GET') {
                     result.method = 'POST';
                 }
             }
         }
 
+        // Extract Bearer token if present in Authorization header
         if (result.headers['Authorization']?.toLowerCase().startsWith('bearer ')) {
             result.auth = {
                 type: 'bearer',

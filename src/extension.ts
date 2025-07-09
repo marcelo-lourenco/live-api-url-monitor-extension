@@ -14,14 +14,13 @@ import type { TreeViewItem } from './models/UrlItem';
 let monitorService: MonitorService;
 let logService: LogService;
 
-export async function activate(context: vscode.ExtensionContext) { // Marcado como async
+export async function activate(context: vscode.ExtensionContext) {
     // Initialize services
     const storageService = new StorageService(context.globalState);
     logService = new LogService(context);
     monitorService = new MonitorService(storageService, logService);
     const addEditView = new AddEditView(context, logService, monitorService);
     const logViewProvider = new LogViewProvider(logService);
-    // Passa monitorService para ListView
     const exportItemsCommand = new ExportItemsCommand(storageService);
     const importItemsCommand = new ImportItemsCommand(storageService, monitorService);
     const importCurlCommand = new ImportCurlCommand(storageService, monitorService);
@@ -32,8 +31,8 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     context.subscriptions.push(
         vscode.window.registerWebviewPanelSerializer('urlMonitor.addEdit', {
             async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, _state: any) {
-                // O 'state' pode ser usado se você salvar o estado do webview
-                // Aqui, estamos apenas restaurando a visualização.
+                // The 'state' can be used if you save the webview state.
+                // Here, we are just restoring the view.
                 addEditView.restoreWebview(webviewPanel);
             }
         })
@@ -79,17 +78,15 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
         vscode.commands.registerCommand('urlMonitor.clearAllLogs', () => logService.clearAllLogs())
     );
 
-
-    // Setup status change notification
-    // É importante registrar este "ouvinte" antes de iniciar o monitoramento.
+    // Register status change listener before starting monitoring.
     monitorService.onStatusChange((errorCount: number) => {
         listView.updateBadge(errorCount);
-        // Atualiza a lista para refletir as mudanças de status nos ícones de cada item.
-        // Isso é importante se um status mudar devido ao monitoramento em background
+        // Refresh the list to reflect status changes in item icons.
+        // This is important if a status changes due to background monitoring.
         listView.refresh();
     });
 
-    // Inicializa o contador de erros com 0 na ativação.
+    // Initialize the error counter with 0 on activation.
     listView.updateBadge(0);
 
     // Start monitoring and then refresh list, showing progress
@@ -100,9 +97,9 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
     }, async (progress) => {
         progress.report({ increment: 0, message: 'Checking initial URL statuses...' });
         try {
-            await monitorService.startMonitoring(); // Espera o primeiro ciclo de verificações
+            await monitorService.startMonitoring(); // Wait for the first check cycle
             progress.report({ increment: 90, message: 'Loading URL list...' });
-            // A lista é atualizada pelo onStatusChange, mas uma atualização aqui garante
+            // The list is updated by onStatusChange, but a refresh here ensures it.
             listView.refresh();
             progress.report({ increment: 100, message: 'URL Monitor is ready.' });
         } catch (error) {
@@ -110,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext) { // Marcado co
             vscode.window.showErrorMessage(`URL Monitor initialization failed: ${error instanceof Error ? error.message : String(error)}`);
             console.error('URL Monitor initialization error:', error);
         }
-        // Pequeno delay para a notificação de progresso desaparecer.
+        // Small delay for the progress notification to disappear.
         await new Promise(resolve => setTimeout(resolve, 2000));
     });
 

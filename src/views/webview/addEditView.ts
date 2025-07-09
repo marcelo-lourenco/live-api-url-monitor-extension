@@ -3,7 +3,7 @@ import type { LogEntry } from '../../models/LogEntry';
 import type { TestResult } from '../../services/MonitorService';
 
 /**
- * A minimal interface for the VS Code API provided to a webview.
+ * Minimal interface for the VS Code API provided to a webview.
  */
 interface IVsCodeApi {
     getState<T = unknown>(): T | undefined;
@@ -203,6 +203,7 @@ function switchAuthView(authType: string) {
 }
 
 function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
+    // Sets up the form for editing or adding a URL item
     const isEditMode = 'id' in item;
     currentItemId = isEditMode ? item.id : null;
     currentLogs = [];
@@ -286,6 +287,7 @@ function initializeForm(item: UrlItem | Omit<UrlItem, 'id'>) {
 }
 
 function gatherFormData(forTestOrCurl = false) {
+    // Collects and validates form data for saving or testing
     const name = nameInput.value;
     const url = urlInput.value;
     const trimmedUrl = url.trim();
@@ -520,6 +522,7 @@ function openSidebarPanel(panelName: string) {
 }
 
 function generateCurlCommand() {
+    // Generates a cURL command based on the current form data
     const data = gatherFormData(true);
     if (!data || !data.url) {
         curlOutput.textContent = 'Enter a valid URL to generate the cURL command.';
@@ -613,6 +616,7 @@ function requestItemLogs() {
 }
 
 function renderLogs() {
+    // Renders logs in the sidebar panel
     const logsToRender = showOnlyErrors
         ? currentLogs.filter(log => log.status === 'down')
         : [...currentLogs];

@@ -5,4 +5,4 @@ declare global {
         postMessage<T>(message: T): void;
     };
 }
-export {}; // Make this file a module to allow global augmentation
+export {}; // Ensures this file is treated as a module for global

@@ -12,7 +12,7 @@ interface CheckResult {
     error?: string;
 }
 
-// New interface for detailed test results from "Try it out"
+// Detailed result for "Try it out" feature
 export interface TestResult {
     status: 'up' | 'down' | 'error';
     statusCode?: number;
@@ -20,7 +20,7 @@ export interface TestResult {
     durationMs: number;
     sizeBytes?: number;
     headers?: Record<string, any>;
-    body?: any; // Can be string, object, etc.
+    body?: any;
     error?: string;
 }
 
@@ -37,8 +37,8 @@ export class MonitorService {
 
     /**
      * Executes a request based on a temporary UrlItem object from the form.
-     * This is used for the "Try it out" feature and returns a detailed result.
-     * It does not log or save status to storage.
+     * Used for the "Try it out" feature and returns a detailed result.
+     * Does not log or save status to storage.
      */
     public async testRequest(item: Omit<UrlItem, 'id'>): Promise<TestResult> {
         const startTime = Date.now();
@@ -61,8 +61,7 @@ export class MonitorService {
                 };
             }
 
-            // This logic is duplicated from performCheckLogic. It's kept separate
-            // to avoid impacting the regular monitoring flow with large response bodies.
+            // Query param logic is duplicated from performCheckLogic to avoid impacting monitoring flow with large responses
             if (item.queryParams && item.queryParams.length > 0) {
                 const url = new URL(config.url);
                 item.queryParams.forEach(param => {
@@ -158,7 +157,7 @@ export class MonitorService {
         // Immediately return if the item is paused.
         if (item.isPaused) {
             return {
-                status: 'up', // Treat as 'up' to not show an error, but with a specific message.
+                status: 'up',
                 durationMs: 0,
                 error: 'Monitoring is paused for this item.'
             };
@@ -257,21 +256,21 @@ export class MonitorService {
     }
 
     private async processStatusUpdate(item: UrlItem, result: CheckResult): Promise<void> {
-        // If status changed to 'down', show an immediate error message.
+        // Show error message if status changed to 'down'
         if (result.status === 'down' && item.lastStatus !== 'down') {
             vscode.window.showErrorMessage(`Monitor Alert: "${item.name}" is down. URL: ${item.url}`);
         }
         await this.storageService.updateItemStatus(item.id, result.status);
 
         // Respect the item's log level setting
-        const logLevel = item.logLevel || 'all'; // Default to 'all' for backward compatibility
+        const logLevel = item.logLevel || 'all';
 
         if (logLevel === 'none') {
-            return; // Do not log anything
+            return;
         }
 
         if (logLevel === 'error' && result.status !== 'down') {
-            return; // Log only errors, and this was a success
+            return;
         }
 
         // Log all results or only errors (if it's an error)
@@ -286,7 +285,7 @@ export class MonitorService {
     }
 
     public async forceCheckItems(items: UrlItem[]): Promise<void> {
-        // Filter out paused items before forcing a check.
+        // Filter out paused items before forcing a check
         items = items.filter(item => !item.isPaused);
 
         if (items.length === 0) {

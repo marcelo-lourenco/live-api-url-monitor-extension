@@ -1,3 +1,6 @@
+/* Only keep comments that explain logic or browser compatibility issues */
+
+/* Prevent body scrollbars */
 body {
     padding: 0;
     margin: 0;
@@ -5,7 +8,6 @@ body {
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
     overflow: hidden;
-    /* Prevent body scrollbars */
 }
 
 .header {
@@ -20,7 +22,6 @@ body {
     justify-content: space-between;
     gap: 6px;
     height: 56px;
-    /* Fixed height */
     box-sizing: border-box;
 }
 
@@ -38,7 +39,6 @@ body {
 .main-wrapper {
     display: flex;
     height: calc(100vh - 56px);
-    /* Full height minus header */
 }
 
 .resizer {
@@ -46,7 +46,7 @@ body {
     cursor: col-resize;
     background-color: var(--vscode-editorGroup-border);
     z-index: 5;
-    display: none; /* Hidden by default, shown via JS */
+    display: none;
     transition: background-color 0.1s ease-in-out;
 }
 
@@ -63,7 +63,6 @@ body {
     padding: 15px;
     overflow-y: auto;
     flex-grow: 1;
-    /* Take up remaining space */
     box-sizing: border-box;
 }
 
@@ -147,53 +146,18 @@ button.secondary:hover {
     flex: 1;
 }
 
-.form-row .col-1 {
-    flex: 1;
-}
-
-.form-row .col-2 {
-    flex: 2;
-}
-
-.form-row .col-3 {
-    flex: 3;
-}
-
-.form-row .col-4 {
-    flex: 4;
-}
-
-.form-row .col-5 {
-    flex: 5;
-}
-
-.form-row .col-6 {
-    flex: 6;
-}
-
-.form-row .col-7 {
-    flex: 7;
-}
-
-.form-row .col-8 {
-    flex: 8;
-}
-
-.form-row .col-9 {
-    flex: 9;
-}
-
-.form-row .col-10 {
-    flex: 10;
-}
-
-.form-row .col-11 {
-    flex: 11;
-}
-
-.form-row .col-12 {
-    flex: 12;
-}
+.form-row .col-1 { flex: 1; }
+.form-row .col-2 { flex: 2; }
+.form-row .col-3 { flex: 3; }
+.form-row .col-4 { flex: 4; }
+.form-row .col-5 { flex: 5; }
+.form-row .col-6 { flex: 6; }
+.form-row .col-7 { flex: 7; }
+.form-row .col-8 { flex: 8; }
+.form-row .col-9 { flex: 9; }
+.form-row .col-10 { flex: 10; }
+.form-row .col-11 { flex: 11; }
+.form-row .col-12 { flex: 12; }
 
 textarea {
     min-height: 80px;
@@ -245,7 +209,6 @@ textarea {
     font-weight: bold;
     text-align: center;
     border-radius: 0;
-    /* Override default button radius */
 }
 
 .tab-button:last-child {
@@ -257,7 +220,6 @@ textarea {
     color: var(--vscode-tab-activeForeground);
     border-bottom: 2px solid var(--vscode-tab-activeBorder);
     margin-bottom: -1px;
-    /* Overlap border */
 }
 
 .tab-button:hover:not(.active) {
@@ -270,46 +232,15 @@ textarea {
 }
 
 /* Method-specific colors */
-#method {
-    font-weight: bold;
-}
+#method { font-weight: bold; }
+option[data-method="GET"] { color: #6bdd9a; font-weight: bold; }
+option[data-method="POST"] { color: #ffe47e; font-weight: bold; }
+option[data-method="PUT"] { color: #74aef6; font-weight: bold; }
+option[data-method="DELETE"] { color: #f79a8e; font-weight: bold; }
+option[data-method="PATCH"] { color: #c0a8e1; font-weight: bold; }
+option[data-method="OPTIONS"] { color: #f15eb0; font-weight: bold; }
+option[data-method="HEAD"] { color: #6bdd9a; font-weight: bold; }
 
-option[data-method="GET"] {
-    color: #6bdd9a;
-    font-weight: bold;
-}
-
-option[data-method="POST"] {
-    color: #ffe47e;
-    font-weight: bold;
-}
-
-option[data-method="PUT"] {
-    color: #74aef6;
-    font-weight: bold;
-}
-
-option[data-method="DELETE"] {
-    color: #f79a8e;
-    font-weight: bold;
-}
-
-option[data-method="PATCH"] {
-    color: #c0a8e1;
-    font-weight: bold;
-}
-
-option[data-method="OPTIONS"] {
-    color: #f15eb0;
-    font-weight: bold;
-}
-
-option[data-method="HEAD"] {
-    color: #6bdd9a;
-    font-weight: bold;
-}
-
-/* Tab content */
 .tab-content {
     padding: 15px;
     display: none;
@@ -457,7 +388,7 @@ option[data-method="HEAD"] {
 /* --- Sidebar Styles --- */
 .sidebar {
     flex-shrink: 0;
-    flex-basis: 40px; /* Use flex-basis for resizable width */
+    flex-basis: 40px;
     background-color: var(--vscode-sideBar-background);
     border-left: 1px solid var(--vscode-editorGroup-border);
     display: flex;
@@ -465,7 +396,7 @@ option[data-method="HEAD"] {
 }
 
 .sidebar.expanded {
-    border-left: none; /* The resizer will act as the border */
+    border-left: none;
 }
 
 .sidebar-toolbar {
@@ -506,25 +437,21 @@ option[data-method="HEAD"] {
 .sidebar-content {
     flex-grow: 1;
     display: none;
-    /* Hidden by default */
     flex-direction: column;
 }
 
 .sidebar.expanded .sidebar-content {
     display: flex;
-    /* Shown when sidebar is expanded */
 }
 
 .sidebar-panel {
     display: none;
-    /* All panels hidden by default */
     flex-direction: column;
     height: 100%;
 }
 
 .sidebar-panel.active {
     display: flex;
-    /* Active panel is shown */
 }
 
 .sidebar-header {
@@ -586,15 +513,11 @@ option[data-method="HEAD"] {
     padding: 10px;
     border-radius: 3px;
     white-space: pre-wrap;
-    /* Since CSS 2.1 */
+    /* For compatibility with various browsers */
     white-space: -moz-pre-wrap;
-    /* Mozilla, since 1999 */
     white-space: -pre-wrap;
-    /* Opera 4-6 */
     white-space: -o-pre-wrap;
-    /* Opera 7 */
     word-wrap: break-word;
-    /* Internet Explorer 5.5+ */
 }
 
 .sidebar-body code {

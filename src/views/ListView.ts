@@ -155,7 +155,7 @@ export class ListView {
             try {
                 await this.storageService.clearAllItems();
                 this.refresh();
-                await this.monitorService.startMonitoring(); // Reinicia o monitoramento com a lista vazia
+                await this.monitorService.startMonitoring(); // Restart monitoring with an empty list
                 vscode.window.showInformationMessage('All items have been deleted successfully.');
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -398,10 +398,7 @@ export class ListView {
                         if (item.auth.key && item.auth.value) {
                             if (item.auth.addTo === 'header') {
                                 curlCommand += ` -H '${item.auth.key}: ${item.auth.value}'`;
-                            } else { // query - already handled by URL construction
-                                // If API key is added to query, it's already part of the `url` variable.
-                                // No need to add it again here.
-                            }
+                            } // If API key is added to query, it's already in the URL
                         }
                         break;
                     // Add other auth types if needed

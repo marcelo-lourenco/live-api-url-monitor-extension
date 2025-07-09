@@ -29,11 +29,11 @@ export interface OAuth2Auth {
     headerPrefix: string;
 }
 
-// Placeholder interfaces for complex auth types. Their fields can be added later.
+// Placeholder interfaces for complex auth types
 export interface AwsV4Auth { type: 'awsv4'; accessKey?: string; secretKey?: string; service?: string; sessionToken?: string; }
 export interface OAuth1Auth { type: 'oauth1'; consumerKey?: string; consumerSecret?: string; token?: string; tokenSecret?: string; }
 
-// A union type for all possible authentication configurations.
+// Union type for all possible authentication configurations
 export type AuthConfig = NoAuth | ApiKeyAuth | BasicAuth | BearerTokenAuth | OAuth2Auth | AwsV4Auth | OAuth1Auth;
 
 export interface QueryParam {
@@ -41,7 +41,7 @@ export interface QueryParam {
     value: string;
 }
 
-export type BodyType = 'none' | 'raw'; // Add other types as needed (form-data, x-www-form-urlencoded, binary, GraphQL)
+export type BodyType = 'none' | 'raw';
 
 export interface NoBody {
     type: 'none';
@@ -63,9 +63,9 @@ export interface UrlItem {
     interval: number;
     expectedStatusCode: number;
     headers?: Record<string, string>;
-    queryParams?: QueryParam[]; // New: For URL query parameters
+    queryParams?: QueryParam[];
     auth?: AuthConfig;
-    body?: RequestBody; // New: For request body
+    body?: RequestBody;
     lastStatus?: 'up' | 'down';
     lastChecked?: string;
     sortOrder: number;
@@ -97,9 +97,9 @@ export function createDefaultUrlItem(): Omit<UrlItem, 'id'> {
         interval: 60,
         expectedStatusCode: 200,
         headers: {},
-        queryParams: [], // Default to empty array
-        auth: { type: 'noauth' }, // Default to no auth
-        body: { type: 'none' }, // Default to no body
+        queryParams: [],
+        auth: { type: 'noauth' },
+        body: { type: 'none' },
         lastStatus: undefined,
         lastChecked: undefined,
         sortOrder: 0,
