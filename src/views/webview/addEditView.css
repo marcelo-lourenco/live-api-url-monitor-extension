@@ -365,10 +365,12 @@ option[data-method="HEAD"] {
     margin-top: 0px;
     padding-top: 15px;
     border-top: 1px solid var(--vscode-editorGroup-border);
+    display: flex;
+    justify-content: flex-end;
 }
 
 #try-request-button {
-    width: 100%;
+    /* width: 100%; */
     font-size: 1.1em;
     display: flex;
     align-items: center;
