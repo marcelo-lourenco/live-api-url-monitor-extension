@@ -1,4 +1,4 @@
-# Live URL & API Monitor - Code of Conduct
+# Live API & URL Monitor - Code of Conduct
 
 ## Our Pledge
 
@@ -37,7 +37,7 @@ Examples of representing our community include using an official email address, 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at [qabi.dev@gmail.com](mailto:qabi.dev@gmail.com).
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at [contact@box4.dev](mailto:contact@box4.dev).
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
@@ -75,4 +75,4 @@ Violating these terms may lead to a permanent ban.
 
 This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1, available at [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
 
-Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder][Mozilla CoC].
+Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/inclusion).

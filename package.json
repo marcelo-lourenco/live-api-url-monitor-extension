@@ -1,9 +1,13 @@
 {
     "name": "live-api-url-monitor",
-    "displayName": "Live URL & API Monitor",
+    "displayName": "Live API & URL Monitor",
     "description": "Live monitor for your API endpoints and URLs. Check status, health, and availability in real-time, all within VS Code",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "publisher": "mlourenco",
+    "author": {
+        "name": "Marcelo Lourenco"
+    },
+    "license": "MIT",
     "type": "module",
     "icon": "resources/meerkat-logo.png",
     "engines": {
@@ -194,7 +198,7 @@
             "activitybar": [
                 {
                     "id": "url-monitor",
-                    "title": "Live URL & API Monitor",
+                    "title": "Live API & URL Monitor",
                     "icon": "resources/meerkat-ico.svg"
                 }
             ]
@@ -203,7 +207,7 @@
             "url-monitor": [
                 {
                     "id": "urlMonitor.list",
-                    "name": "Live URL & API Monitor",
+                    "name": "Live API & URL Monitor",
                     "icon": "resources/meerkat-ico.svg"
                 }
             ]
@@ -457,12 +461,16 @@
         "url-parse": "^1.5.10",
         "uuid": "^11.1.0"
     },
+    "extensionKind": [
+        "workspace"
+    ],
+    "homepage": "https://box4.dev/projects/vscode-extensions/live-api-url-monitor/",
     "repository": {
         "type": "git",
-        "url": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension"
+        "url": "git+https://github.com/marcelo-lourenco/live-api-url-monitor-extension.git"
     },
-    "homepage": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension",
     "bugs": {
         "url": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension/issues"
-    }
+    },
+    "qna": "https://github.com/marcelo-lourenco/live-api-url-monitor-extension/discussions"
 }

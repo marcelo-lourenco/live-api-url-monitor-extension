@@ -30,3 +30,5 @@ Contributions are welcome! Please feel free to submit [issues](https://github.co
 ---
 
 **Live API & URL Monitor** helps developers monitor APIs in real time—without leaving VS Code.
+
+By [box4.dev](https://box4.dev/projects/vscode-extensions/live-api-url-monitor/).
